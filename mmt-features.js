@@ -181,6 +181,32 @@
     tiles.appendChild(guideBtn);
   }
 
+  // ── 更多按钮:图标改为向下箭头,菜单向下展开(微信式);展开时箭头旋转 180° ──
+  function buildArrowMoreBtn() {
+    const b = document.getElementById('btn-more');
+    if (!b || b.dataset.mmtArrow) return;
+    b.dataset.mmtArrow = '1';
+    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8.8l6.5 6.4 6.5-6.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    // 包装 toggleMorePanel:面板开合时同步箭头方向
+    if (typeof window.toggleMorePanel === 'function' && !window.toggleMorePanel.__mmtArrow) {
+      const orig = window.toggleMorePanel;
+      window.toggleMorePanel = function () {
+        const r = orig.apply(this, arguments);
+        const p = document.getElementById('more-panel');
+        b.classList.toggle('open', !!(p && p.classList.contains('open')));
+        return r;
+      };
+      window.toggleMorePanel.__mmtArrow = true;
+    }
+    const arrowCss = document.createElement('style');
+    arrowCss.textContent = `
+      #btn-more svg{transition:transform .2s ease;}
+      #btn-more.open svg{transform:rotate(180deg);}
+      #btn-more{color:#6b7686;}
+    `;
+    document.head.appendChild(arrowCss);
+  }
+
   // ── 体验模式(开关):上游网页版编辑体验——手动扮演师生双方 + 回复框/旁白/播放 ──
   // 示例学生未花:开启时若无则添加;关闭时保留学生与聊天(避免误删用户在体验中写的内容)
   const DEMO_LS = 'mmt_demo_mode_v1';
@@ -272,6 +298,7 @@
     let tries = 0;
     const timer = setInterval(() => {
       const tiles = document.getElementById('more-tiles');
+      buildArrowMoreBtn();
       if (tiles) { buildFeatureTiles(); clearInterval(timer); }
       else if (++tries > 40) clearInterval(timer);
     }, 500);
