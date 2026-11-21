@@ -1,12 +1,21 @@
 /*!
  * ForJiang · MomoTalk 桌面版
- * 新功能扩展:社团表情包 + 聊天截图(Canvas 长图,基于上游 chat_screenshot.js)
+ * 新功能扩展:社团表情包 + 聊天截图(Canvas 长图,基于上游 chat_screenshot.js)+ Demo 模式
  *
  * Author: ForJiang <https://forjiang.github.io>
  * Copyright (c) 2026 ForJiang. Released under the GPL-3.0-or-later License.
  */
 (() => {
   const EMOJI_COUNT = 183;
+  const toast = (msg, ok) => {
+    document.querySelectorAll('.mmt-voice-toast, .mmt-ai-toast, .mmt-img-toast').forEach((t) => t.remove());
+    const el = document.createElement('div');
+    el.className = 'mmt-voice-toast';
+    el.style.background = ok ? 'rgba(47,158,95,.95)' : 'rgba(217,83,79,.95)';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4200);
+  };
   const CSS = `
     #mmt-emoji-btn{width:38px;height:38px;border-radius:12px;cursor:pointer;
       background:#fdf0f3;border:1px solid #f3d9e0;color:#e56d84;display:flex;align-items:center;justify-content:center;
@@ -32,7 +41,6 @@
   `;
   document.head.appendChild(Object.assign(document.createElement('style'), { textContent: CSS }));
 
-  // 加载上游截图模块(同源资源,一次)
   function ensureScreenshotModule() {
     if (window.ChatScreenshot) return;
     const sc = document.createElement('script');
@@ -46,7 +54,6 @@
 
   function state() { return window.__mmtChatState && window.__mmtChatState(); }
 
-  // ── 表情包 ──
   function buildEmojiUI() {
     const area = document.querySelector('.chat-input-area');
     if (!area || document.getElementById('mmt-emoji-btn')) return;
@@ -61,10 +68,7 @@
       Array.from({ length: EMOJI_COUNT }, (_, i) =>
         `<button class="emoji-cell" type="button" data-emoji="${i}"><img loading="lazy" src="./resources/emoji/${i}.png"></button>`
       ).join('') + '</div>';
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      panel.classList.toggle('open');
-    });
+    btn.addEventListener('click', (e) => { e.stopPropagation(); panel.classList.toggle('open'); });
     panel.addEventListener('click', (e) => {
       e.stopPropagation();
       const cell = e.target.closest('.emoji-cell');
@@ -82,7 +86,6 @@
     area.appendChild(panel);
   }
 
-  // ── 聊天截图 ──
   function buildBoxes() {
     const st = state();
     if (!st || !st.history.length) return [];
@@ -114,7 +117,7 @@
     const avatarEl = document.getElementById('chat-header-avatar');
     const avatar = (avatarEl && avatarEl.src && avatarEl.src.startsWith('http')) ? avatarEl.src : '';
     window.showModal('聊天截图',
-      '<div class="screenshot-loading" style="text-align:center;padding:20px 0;color:#888;">正在生成截图…</div>', []);
+      '<div style="text-align:center;padding:20px 0;color:#888;">正在生成截图…</div>', []);
     window.ChatScreenshot.generate({
       boxes: boxes,
       student: { name: st.nameCn || st.name || '', avatar: avatar },
@@ -153,6 +156,73 @@
     if (trash) header.insertBefore(btn, trash);
     else header.appendChild(btn);
   }
+
+  // ── Demo 模式:预置演示对话回放(无需 AI) ──
+  let demoPlaying = false;
+  const DEMO_SCRIPT = [
+    { role: 'sensei', text: '星野，在吗？' },
+    { role: 'student', text: '哎——在呐。大叔我刚睡醒~' },
+    { role: 'sensei', demoImage: true },
+    { role: 'student', emoji: 3 },
+    { role: 'student', text: '周五的约会别忘了哦！老师说好的~' },
+    { role: 'sensei', text: '忘不了！布丁我带双份。' },
+    { role: 'student', text: '哎——布丁呐！那就说定了，拉钩~' },
+    { role: 'sensei', text: '拉钩。' },
+    { role: 'student', text: '嘿嘿，那周五见啦，老师~' },
+  ];
+
+  function demoImage() {
+    const c = document.createElement('canvas'); c.width = 320; c.height = 160;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 320, 160);
+    x.fillStyle = '#1a6'; x.font = 'bold 52px sans-serif'; x.fillText('小菊公园', 40, 95);
+    return c.toDataURL('image/png');
+  }
+
+  async function startDemo() {
+    if (demoPlaying) return;
+    demoPlaying = true;
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    try {
+      if (typeof switchToList === 'function') switchToList();
+      await wait(300);
+      if (!document.querySelector('.contact-item')) throw new Error('no student');
+      document.querySelector('.contact-item').click();
+      await wait(700);
+      const st = state();
+      if (!st) throw new Error('no chat state');
+      const aiEnabled = window.mmtAi ? window.mmtAi.settings.enabled : false;
+      const autoRead = window.mmtVoice ? window.mmtVoice.settings.auto : false;
+      if (window.mmtAi) window.mmtAi.settings.enabled = false;
+      if (window.mmtVoice) window.mmtVoice.settings.auto = false;
+      toast('Demo 播放中…', true);
+      const say = (m) => {
+        if (m.role === 'sensei') {
+          const input = document.getElementById('chat-input');
+          input.value = m.demoImage ? demoImage() : m.text;
+          window.sendMessage();
+        } else if (m.emoji != null) {
+          st.pushStudent(absUrl('./resources/emoji/' + m.emoji + '.png'));
+        } else {
+          st.pushStudent(m.text);
+        }
+        if (typeof renderChat === 'function') renderChat();
+      };
+      for (const m of DEMO_SCRIPT) {
+        say(m);
+        await wait(m.role === 'sensei' ? 850 : 780);
+      }
+      toast('Demo 播放完毕（可用垃圾桶清空）', true);
+      if (window.mmtAi) window.mmtAi.settings.enabled = aiEnabled;
+      if (window.mmtVoice) window.mmtVoice.settings.auto = autoRead;
+    } catch (e) {
+      toast('Demo 失败: ' + String(e && e.message || e).slice(0, 60), false);
+      if (window.mmtAi) window.mmtAi.settings.enabled = true;
+    } finally {
+      setTimeout(() => { demoPlaying = false; }, 1200);
+    }
+  }
+
+  window.mmtFeatures = { startDemo: () => startDemo() };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureScreenshotModule);
   else ensureScreenshotModule();
