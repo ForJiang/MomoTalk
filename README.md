@@ -4,11 +4,15 @@
 
 **《蔚蓝档案》桃信桌面版 — AI 聊天 · 图片识别 · 角色克隆语音**
 
+**Blue Archive MomoTalk Desktop — AI Chat · Image Recognition · Voice Cloning**
+
 ForJiang · GPL-3.0
 
 </div>
 
 ---
+
+English intro at the bottom: [English](#english)
 
 将网页版 MomoTalk(桃信)打造为开箱即用的 macOS 桌面应用,并加入完整的本地 AI 能力:
 
@@ -64,3 +68,40 @@ npm run dist         # 产出 dist/MomoTalk-*.dmg
 **ForJiang** · [forjiang.github.io](https://forjiang.github.io)
 
 </div>
+
+---
+
+## English
+
+**MomoTalk Desktop** turns the web MomoTalk (桃信) into a ready-to-use macOS desktop app with full local AI:
+
+- **AI auto-reply** — bundled Ollama (qwen2.5:7b), zero-config out of the box; DeepSeek / OpenAI cloud APIs supported with a model dropdown
+- **Canon personas** — 30+ core students with personalities and speech quirks matching the original (Hoshino's uncle tone, Shiroko's silence, Hifumi's "えへへ☆"…), matched automatically; per-student custom personas and long-term memory
+- **Image recognition** — send an image and the AI "looks" before replying (local vision model qwen2.5vl:3b)
+- **Character voice cloning** — four engines: system TTS / VoiceStudio / GPT-SoVITS / RVC; each student gets an auto-assigned voice and pitch, and under the RVC engine a per-student voice model
+- **4-language UI** — 简体中文 / 繁體中文 / English / 日本語, student names following official translations
+- **Desktop experience** — image send/receive (button / paste / drag), AI reply images, long-screenshot export, backups to a folder you choose, always-on-top, TouchBar-style volume… all inference is local, data never leaves your machine
+
+### Install
+
+Download `MomoTalk-*-arm64.dmg` (Apple Silicon) from [Releases](https://github.com/ForJiang/MomoTalk/releases) and drag it into Applications. First-time service deployment (chat / vision models and voice services) is covered by the in-app deployment guide PDF (File → Deployment Guide for New Machines) or the one-click scripts in `dist/setup/`:
+
+- `setup-momotalk.command` — one-click setup on a new machine (Ollama + models + voice services)
+- `make-migration-pack.command` — build a migration pack on the old machine to move all models and settings offline
+
+### Build from source
+
+```bash
+git clone https://github.com/ForJiang/MomoTalk.git
+cd MomoTalk
+npm install
+npm run dist    # produces dist/MomoTalk-*.dmg
+```
+
+### License & credits
+
+- New code in this project is released under [GPL-3.0-or-later](./LICENSE)
+- Built on [zakosensei/MomoTalk](https://github.com/zakosensei/MomoTalk) — see [NOTICE.md](./NOTICE.md)
+- Blue Archive names and assets are © NEXON Games / Yostar; this is an unaffiliated, non-commercial fan project
+
+**ForJiang** · [forjiang.github.io](https://forjiang.github.io)
