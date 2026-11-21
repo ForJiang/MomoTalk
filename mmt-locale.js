@@ -868,8 +868,22 @@
     // 致谢与赞赏入口保持移除
     const credits = document.getElementById('credits-card');
     if (credits) credits.style.setProperty('display', 'none');
+    // 赞助入口:显示 ForJiang 的微信/支付宝收款码弹窗(替换上游赞赏)
+    const DONATE_ENTRY_LABELS = {
+      'zh-CN': '赞助开发者（微信 / 支付宝）',
+      'zh-TW': '贊助開發者（微信 / 支付寶）',
+      en: 'Sponsor (WeChat / Alipay)',
+      ja: '開発者を支援（WeChat / Alipay）',
+    };
     const donate = document.getElementById('donate-entry');
-    if (donate && donate.closest('.more-list-item')) donate.closest('.more-list-item').style.setProperty('display', 'none');
+    if (donate) {
+      donate.textContent = DONATE_ENTRY_LABELS[locale] || DONATE_ENTRY_LABELS['zh-CN'];
+      const row = donate.closest('.more-list-item');
+      if (row) {
+        row.style.setProperty('display', '');
+        row.onclick = () => window.mmtFeatures && window.mmtFeatures.showDonateModal && window.mmtFeatures.showDonateModal();
+      }
+    }
 
     // 联系方式：填充 ForJiang 的（B站 / 个人网站 / 邮箱）
     const C = FJ.contact;

@@ -862,6 +862,30 @@ setTimeout(() => {
   }
 }, 2500);
 
+// Ollama 兜底：11434 探测失败且本机无进程时拉起 ollama serve（LaunchAgent 失效/未加载时保证 AI 可用）
+setTimeout(() => {
+  try {
+    net.fetch('http://127.0.0.1:11434/api/version', { signal: AbortSignal.timeout(2500) })
+      .then((r) => { if (r.ok) return; tryOllamaFallback(); })
+      .catch(() => tryOllamaFallback());
+  } catch { tryOllamaFallback(); }
+  function tryOllamaFallback() {
+    require('child_process').exec('pgrep -x ollama', (err, stdout) => {
+      if (!err && String(stdout).trim()) return; // 已有实例（可能在加载中）
+      const home = require('os').homedir();
+      const candidates = IS_WIN ? [
+        path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Ollama', 'ollama.exe'),
+        'C:\\Program Files\\Ollama\\ollama.exe',
+      ] : [path.join(home, '.local', 'opt', 'ollama', 'ollama')];
+      const bin = candidates.find((p) => { try { return fs.existsSync(p); } catch { return false; } });
+      if (bin) {
+        require('child_process').spawn(bin, ['serve'], { detached: true, stdio: 'ignore' }).unref();
+        console.log('[ollama] 11434 不可达,已拉起 ollama serve');
+      }
+    });
+  }
+}, 1200);
+
 // 启动后预热本地模型：把权重载入内存，首次对话免等待（聊天 + 视觉双模型共存）
 if (!SELF_TEST) {
   setTimeout(async () => {

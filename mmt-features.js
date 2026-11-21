@@ -323,6 +323,47 @@
   `;
   document.head.appendChild(myavCss);
 
+  // ── 赞助弹窗:微信 / 支付宝收款码(更多页「赞助开发者」入口) ──
+  const DONATE_LABELS = {
+    'zh-CN': { title: '赞助开发者', wechat: '微信支付', alipay: '支付宝', done: '完成', tip: '扫码请作者喝杯咖啡 · 感谢支持' },
+    'zh-TW': { title: '贊助開發者', wechat: '微信支付', alipay: '支付寶', done: '完成', tip: '掃碼請作者喝杯咖啡 · 感謝支持' },
+    en: { title: 'Sponsor the Developer', wechat: 'WeChat Pay', alipay: 'Alipay', done: 'Done', tip: 'Scan to buy the author a coffee · Thanks for your support' },
+    ja: { title: '開発者を支援', wechat: 'WeChat Pay', alipay: 'Alipay', done: '完了', tip: 'スキャンして作者にコーヒーを · ご支援ありがとうございます' },
+  };
+  function showDonateModal() {
+    const L = DONATE_LABELS[window.__MMT_LOCALE] || DONATE_LABELS['zh-CN'];
+    let ov = document.getElementById('mmt-donate-overlay');
+    if (ov) { ov.style.display = 'flex'; return; }
+    ov = document.createElement('div');
+    ov.id = 'mmt-donate-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(43,34,48,.55);z-index:9001;display:flex;align-items:center;justify-content:center;padding:18px;';
+    ov.innerHTML = `
+      <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;max-height:100%;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(40,20,30,.3);">
+        <div style="padding:12px 16px;background:#e56d84;color:#fff;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:space-between;">
+          <span>${L.title}</span>
+          <button class="mmt-donate-close" style="border:none;background:rgba(255,255,255,.25);color:#fff;width:26px;height:26px;border-radius:8px;cursor:pointer;font-size:13px;">✕</button>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:14px;">
+          <div style="border:1px solid #eee0e5;border-radius:12px;padding:12px;text-align:center;">
+            <div style="font-size:13px;font-weight:700;color:#1aad19;margin-bottom:8px;">${L.wechat}</div>
+            <img src="./resources/donate-wechat.png" alt="WeChat" style="width:min(100%, 280px);border-radius:8px;display:block;margin:0 auto;">
+          </div>
+          <div style="border:1px solid #eee0e5;border-radius:12px;padding:12px;text-align:center;">
+            <div style="font-size:13px;font-weight:700;color:#1677ff;margin-bottom:8px;">${L.alipay}</div>
+            <img src="./resources/donate-alipay.png" alt="Alipay" style="width:min(100%, 280px);border-radius:8px;display:block;margin:0 auto;">
+          </div>
+          <div style="text-align:center;font-size:11.5px;color:#8a7a83;">${L.tip}</div>
+        </div>
+        <div style="padding:10px 16px 14px;border-top:1px solid #f0e3e8;">
+          <button class="mmt-donate-done" style="width:100%;padding:9px 0;border-radius:10px;border:none;background:#e56d84;color:#fff;font-weight:600;font-size:13px;cursor:pointer;">${L.done}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('.mmt-donate-close').onclick = () => { ov.style.display = 'none'; };
+    ov.querySelector('.mmt-donate-done').onclick = () => { ov.style.display = 'none'; };
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.style.display = 'none'; });
+  }
+
   // ── Demo 模式(开关):上游网页版编辑体验——手动扮演师生双方 + 回复框/旁白/播放 ──
   // 切换全程静默(不跳页面、不弹选择器):后台加示例学生与种子对话,只切徽章显隐
   // 示例学生未花:开启时若无则添加;关闭时保留学生与聊天(避免误删用户在体验中写的内容)
@@ -386,7 +427,7 @@
       try { localStorage.setItem(DEMO_LS, '0'); } catch {}
     }
   }
-  window.mmtFeatures = { showDeployGuide: () => showDeployGuide(), setDemoMode: (on) => setDemoMode(on), changeMyAvatar: () => openMyAvatarModal(), setMyAvatarShow: (v) => setMyAvatarShow(v), myAvatarShow: () => myAvatarShow(), isDemoOn: () => { try { return localStorage.getItem(DEMO_LS) === '1'; } catch { return false; } } };
+  window.mmtFeatures = { showDeployGuide: () => showDeployGuide(), setDemoMode: (on) => setDemoMode(on), changeMyAvatar: () => openMyAvatarModal(), setMyAvatarShow: (v) => setMyAvatarShow(v), myAvatarShow: () => myAvatarShow(), showDonateModal: () => showDonateModal(), isDemoOn: () => { try { return localStorage.getItem(DEMO_LS) === '1'; } catch { return false; } } };
 
   // 启动时:Demo 模式若处于开启状态(上次会话),恢复身份徽章显示;并追加瓷贴
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap);
