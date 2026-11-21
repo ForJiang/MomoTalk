@@ -1,0 +1,66 @@
+{
+  "name": "momotalk",
+  "productName": "MomoTalk",
+  "version": "1.24.2",
+  "description": "蔚蓝档案 Momotalk（桃信）桌面版，基于开源 MomoTalk 网页项目封装，署名 ForJiang",
+  "main": "main.js",
+  "author": "ForJiang",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "start": "electron .",
+    "selftest": "bash -c 'pkill -f \"MomoTalk.app/Contents/MacOS/MomoTalk\" 2>/dev/null; sleep 1; electron . --self-test'",
+    "dist": "electron-builder --mac --arm64"
+  },
+  "build": {
+    "appId": "io.github.zakosensei.momotalk",
+    "productName": "MomoTalk",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "ai-extension.js",
+      "mmt-locale.js",
+      "voice-extension.js",
+      "preload.js",
+      "www/**/*",
+      "build/icon_1024.png",
+      "build/forjiang-avatar.jpg"
+    ],
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.social-networking",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "dir",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "title": "MomoTalk"
+    },
+    "extraResources": [
+      {
+        "from": "build/voice",
+        "to": "voice"
+      },
+      {
+        "from": "build/docs",
+        "to": "docs"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0"
+  }
+}
