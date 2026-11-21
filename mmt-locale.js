@@ -825,6 +825,34 @@
     ja: { bili: 'ビリビリ', biliValue: 'b23.tv/edD6tm9', site: 'ウェブサイト' },
   };
   const FJ = window.__MMT_FJ || {};
+  // 上游署名(GPL-3.0 义务):关于页开发者卡片标注网页版原作 zako老师
+  const UPSTREAM_LABELS = {
+    'zh-CN': '网页版原作:zako老师',
+    'zh-TW': '網頁版原作:zako老師',
+    en: 'Original web version by zako-sensei',
+    ja: 'Web版原作:zako先生',
+  };
+  function applyUpstreamCredit() {
+    const nameEl = document.getElementById('developer-name');
+    if (!nameEl || !nameEl.parentNode) return;
+    let up = document.getElementById('mmt-upstream-credit');
+    if (!up) {
+      up = document.createElement('div');
+      up.id = 'mmt-upstream-credit';
+      up.style.cssText = 'font-size:11.5px;color:#8a7a83;margin-top:3px;line-height:1.5;';
+      const a = document.createElement('a');
+      a.href = 'https://github.com/zakosensei/MomoTalk';
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = UPSTREAM_LABELS[window.__MMT_LOCALE] || UPSTREAM_LABELS['zh-CN'];
+      a.style.cssText = 'color:#8a7a83;text-decoration:underline;text-underline-offset:2px;';
+      up.appendChild(a);
+      nameEl.parentNode.insertBefore(up, nameEl.nextSibling);
+    } else {
+      const a = up.querySelector('a');
+      if (a) a.textContent = UPSTREAM_LABELS[window.__MMT_LOCALE] || UPSTREAM_LABELS['zh-CN'];
+    }
+  }
   function applyBrand() {
     if (!FJ.name) return;
     const nameEl = document.getElementById('developer-name');
@@ -834,6 +862,7 @@
     // 开发者主页链接移除:与"联系我们 → 个人网站"重复
     const link = document.getElementById('developer-link');
     if (link) link.style.setProperty('display', 'none');
+    applyUpstreamCredit();
     const ver = document.getElementById('about-version');
     if (ver && FJ.version) ver.textContent = FJ.version;
     // 致谢与赞赏入口保持移除
