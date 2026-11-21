@@ -507,6 +507,9 @@
       /* 页面与分区切换：淡入上滑（display 翻转时自动播放） */
       #more-page.active{animation:mmtIn .24s ease;}
       .more-panel.active{animation:mmtIn .2s ease;}
+      /* 页头标题居中(返回键保持左侧) */
+      .more-header{position:relative;}
+      .more-header-title{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;}
       /* 弹窗：遮罩淡入 + 内容上浮 */
       .modal-overlay.active{animation:mmtIn .18s ease;}
       .modal-overlay.active .modal-content{animation:mmtPop .2s ease;}

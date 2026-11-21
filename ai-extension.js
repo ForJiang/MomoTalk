@@ -476,7 +476,7 @@
           <input type="password" id="mmta-key" placeholder="sk-…（本地模型可留空）">
           <div class="arow">${a('model', '模型')}</div>
           <div class="row2"><input type="text" id="mmta-model" placeholder="deepseek-chat">
-            <select id="mmta-model-sel" class="mmta-sel"></select>
+            <select id="mmta-model-sel" class="mmta-sel mmt-hide"></select>
             <button class="mini" id="mmta-fetch">${a('fetch', '拉取')}</button></div>
           <datalist id="mmta-model-list"></datalist>
           <div class="status" id="mmta-status"></div>
@@ -503,7 +503,7 @@
             <input type="checkbox" id="mmta-vis-on"> ${a('visOnLabel', '自动识别图片内容（需本地视觉模型）')}</div>
           <div class="arow">${a('visModelLabel', '视觉模型')}</div>
           <input type="text" id="mmta-vis-model" placeholder="qwen2.5vl:3b">
-          <select id="mmta-vis-model-sel" class="mmta-sel"></select>
+          <select id="mmta-vis-model-sel" class="mmta-sel mmt-hide"></select>
           <div class="hint" style="margin-top:8px;">${a('visHint', '发送图片后 AI 会自动看图再回复。首次识别需加载视觉模型（约 1 分钟内），之后很快。')}</div>
         </div>
         <div class="about-card">
@@ -572,6 +572,7 @@
     const MODEL_CUSTOM = '__custom__';
     const fillSel = (sel, list, cur, input) => {
       if (!sel || !input) return;
+      if (!list || !list.length) { sel.classList.add('mmt-hide'); return; }
       const opts = [];
       const seen = new Set();
       const add = (m) => {
