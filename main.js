@@ -159,7 +159,7 @@ const FRAME_CSS = `
   .header, .chat-header, .more-header { -webkit-app-region: drag; }
   .header a, .header button, .chat-header .back-btn,
   .more-header .back-btn, #more-back-btn,
-  #btn-play, #btn-screenshot, #btn-playback-stop,
+  #btn-play, #btn-screenshot, #btn-playback-stop, #mmt-clear-chat,
   #chat-header-avatar { -webkit-app-region: no-drag; }
 ` + (IS_WIN ? `
   .header, .chat-header, .more-header { padding-right: 140px !important; padding-left: 12px !important; }

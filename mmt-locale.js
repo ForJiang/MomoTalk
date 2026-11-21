@@ -362,13 +362,17 @@
     ja: { title: 'チャット履歴を消去', confirm: '「{name}」とのチャット履歴をすべて消去しますか？元に戻せません。', clear: '消去', cancel: 'キャンセル' },
   };
   function buildClearChat() {
+    if (document.getElementById('mmt-clear-chat')) return;
+    const shot = document.getElementById('btn-screenshot');
     const header = document.querySelector('.chat-header');
-    if (!header || document.getElementById('mmt-clear-chat')) return;
+    if (!header || !shot) return;
     const L = CC_LABELS[window.__MMT_LOCALE] || CC_LABELS['zh-CN'];
     const btn = document.createElement('button');
     btn.id = 'mmt-clear-chat';
     btn.title = L.title;
-    btn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="display:block"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+    // 复用上游顶栏按钮样式,流内排在相机截图按钮右侧(旧版 absolute 定位会压住 v8 新增的相机按钮)
+    btn.className = 'chat-tool-btn';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="display:block"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
     btn.addEventListener('click', () => {
       const st = window.__mmtChatState && window.__mmtChatState();
       if (!st || st.id == null) return;
@@ -380,7 +384,8 @@
           { text: L.clear, class: 'danger', onClick: () => { window.closeModal(); const s = window.__mmtChatState(); if (s) s.clearChat(); } },
         ]);
     });
-    header.appendChild(btn);
+    if (shot.parentNode) shot.parentNode.insertBefore(btn, shot.nextSibling);
+    else header.appendChild(btn);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildClearChat);
   else buildClearChat();
@@ -575,7 +580,6 @@
           margin-bottom: 12px;
         }
       }
-      #mmt-clear-chat{ right: max(14px, calc(50% - 366px)) !important; }
       /* 按钮按压反馈 */
       .mini:active,.send-btn:active{transform:scale(.97);}
       .mini,.send-btn{transition:transform .12s ease,filter .15s ease;}
@@ -615,12 +619,7 @@
       .mmt-img-toast{position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:10000;
         color:#fff;font-size:12px;padding:8px 14px;border-radius:10px;max-width:80%;
         box-shadow:0 6px 18px rgba(0,0,0,.25);overflow-wrap:anywhere;}
-      .chat-header{position:relative;}
-      #mmt-clear-chat{position:absolute;right:14px;top:50%;transform:translateY(-50%);
-        width:30px;height:30px;border-radius:8px;border:none;background:rgba(255,255,255,.22);
-        color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
-        transition:background .15s;-webkit-app-region:no-drag;}
-      #mmt-clear-chat:hover{background:rgba(255,255,255,.4);}
+      /* 清空聊天按钮:改用上游 .chat-tool-btn 流内样式(相机右侧),旧 absolute 定位会压住 v8 新增的相机按钮 */
       #mmt-tutorial-guide ~ #tutorial-empty{display:none !important;}
       #mmt-tutorial-guide ~ .tutorial-hint{display:none;}
     `;
