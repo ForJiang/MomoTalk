@@ -1,7 +1,7 @@
 {
   "name": "momotalk",
   "productName": "MomoTalk",
-  "version": "1.26.1",
+  "version": "1.27.0",
   "description": "蔚蓝档案 Momotalk（桃信）桌面版，基于开源 MomoTalk 网页项目封装，署名 ForJiang",
   "main": "main.js",
   "author": "ForJiang",

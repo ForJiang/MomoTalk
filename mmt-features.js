@@ -17,17 +17,31 @@
     setTimeout(() => el.remove(), 4200);
   };
   const CSS = `
-    #mmt-emoji-btn{width:38px;height:38px;border-radius:12px;cursor:pointer;
+    #mmt-img-btn{display:none !important;}
+    #mmt-menu-btn{width:38px;height:38px;border-radius:12px;cursor:pointer;
       background:#fdf0f3;border:1px solid #f3d9e0;color:#e56d84;display:flex;align-items:center;justify-content:center;
       flex:none;transition:filter .15s,background .15s;padding:0;margin-bottom:1px;align-self:flex-end;}
-    #mmt-emoji-btn:hover{background:#fbe3e9;}
-    #mmt-emoji-btn:active{filter:brightness(.95);}
-    #mmt-emoji-btn svg{width:19px;height:19px;}
-    #mmt-emoji-panel{position:absolute;left:12px;bottom:64px;width:300px;max-height:280px;overflow-y:auto;
-      background:#fff;border:1px solid #f3d9e0;border-radius:14px;box-shadow:0 8px 24px rgba(90,40,60,.16);
-      padding:10px;z-index:500;display:none;}
-    #mmt-emoji-panel.open{display:block;}
-    #mmt-emoji-panel .emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
+    #mmt-menu-btn:hover{background:#fbe3e9;}
+    #mmt-menu-btn:active{filter:brightness(.95);}
+    #mmt-menu-btn svg{width:20px;height:20px;}
+    #mmt-tile-panel{position:absolute;left:8px;right:8px;bottom:60px;z-index:500;display:none;
+      background:#fbfbfd;border-radius:18px;box-shadow:0 10px 30px rgba(60,35,50,.18);padding:14px 10px 8px;}
+    #mmt-tile-panel.open{display:block;animation:mmtTileIn .18s ease;}
+    @keyframes mmtTileIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    #mmt-tile-panel .tile-row{display:flex;gap:6px;justify-content:space-around;}
+    #mmt-tile-panel .tile{flex:1;max-width:96px;display:flex;flex-direction:column;align-items:center;gap:6px;
+      border:none;background:transparent;cursor:pointer;padding:4px 2px;border-radius:12px;}
+    #mmt-tile-panel .tile:hover{background:#f4f4f6;}
+    #mmt-tile-panel .tile .t-ico{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;}
+    #mmt-tile-panel .tile .t-ico svg{width:26px;height:26px;}
+    #mmt-tile-panel .tile .t-lb{font-size:12px;color:#3a3a44;}
+    #mmt-emoji-panel{position:absolute;left:8px;right:8px;bottom:60px;z-index:501;display:none;
+      background:#fbfbfd;border-radius:18px;box-shadow:0 10px 30px rgba(60,35,50,.18);padding:12px;max-height:320px;overflow-y:auto;}
+    #mmt-emoji-panel.open{display:block;animation:mmtTileIn .18s ease;}
+    #mmt-emoji-panel .emoji-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+    #mmt-emoji-panel .emoji-back{border:none;background:transparent;color:#e56d84;font-size:13px;cursor:pointer;padding:2px 6px;}
+    #mmt-emoji-panel .emoji-title{font-size:13px;color:#3a3a44;font-weight:600;}
+    #mmt-emoji-panel .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;}
     #mmt-emoji-panel .emoji-cell{border:none;background:transparent;cursor:pointer;padding:2px;border-radius:8px;}
     #mmt-emoji-panel .emoji-cell:hover{background:#fdf0f3;}
     #mmt-emoji-panel .emoji-cell img{width:100%;display:block;}
@@ -76,36 +90,64 @@
 
   function state() { return window.__mmtChatState && window.__mmtChatState(); }
 
-  function buildEmojiUI() {
+  const ICONS = {
+    emoji: '<svg viewBox="0 0 24 24" fill="none" stroke="#3a3a44" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c.9 1.2 2.1 1.8 3.5 1.8s2.6-.6 3.5-1.8"/><circle cx="9" cy="9.5" r="1" fill="#3a3a44" stroke="none"/><circle cx="15" cy="9.5" r="1" fill="#3a3a44" stroke="none"/></svg>',
+    image: '<svg viewBox="0 0 24 24" fill="#5b8fd9"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 16l5-5 4 4 3-3 6 6v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1z" fill="#fff" opacity=".9"/><circle cx="9" cy="9" r="1.6" fill="#fff"/></svg>',
+    shot: '<svg viewBox="0 0 24 24" fill="none" stroke="#3a3a44" stroke-width="1.7"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.6"/><path d="M8 6l1.2-2h5.8L16 6"/></svg>',
+    clear: '<svg viewBox="0 0 24 24" fill="none" stroke="#3a3a44" stroke-width="1.7"><path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13"/></svg>',
+  };
+  function buildTileBar() {
     const area = document.querySelector('.chat-input-area');
-    if (!area || document.getElementById('mmt-emoji-btn')) return;
-    const imgBtn = document.getElementById('mmt-img-btn');
-    const btn = document.createElement('button');
-    btn.id = 'mmt-emoji-btn';
-    btn.title = '社团表情';
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.5 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3.5 9.5c-2.9 0-5.36-1.93-6.14-4.57h12.28C17.36 17.57 14.9 19.5 12 19.5z"/></svg>';
-    const panel = document.createElement('div');
-    panel.id = 'mmt-emoji-panel';
-    panel.innerHTML = '<div class="emoji-grid">' +
+    if (!area || document.getElementById('mmt-menu-btn')) return;
+    const menuBtn = document.createElement('button');
+    menuBtn.id = 'mmt-menu-btn';
+    menuBtn.title = '更多功能';
+    menuBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3zm0 7a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3zm0 7a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3z"/></svg>';
+    area.insertBefore(menuBtn, area.firstChild);
+
+    const tilePanel = document.createElement('div');
+    tilePanel.id = 'mmt-tile-panel';
+    const tiles = [
+      { id: 'emoji', lb: '社团表情', ico: ICONS.emoji, bg: '#fdf0f3' },
+      { id: 'image', lb: '本地图片', ico: ICONS.image, bg: '#eaf1fd' },
+      { id: 'shot', lb: '聊天截图', ico: ICONS.shot, bg: '#eef0f3' },
+      { id: 'clear', lb: '清空聊天', ico: ICONS.clear, bg: '#f4f4f6' },
+    ];
+    tilePanel.innerHTML = '<div class="tile-row">' + tiles.map((t) =>
+      `<button class="tile" type="button" data-t="${t.id}"><span class="t-ico" style="background:${t.bg}">${t.ico}</span><span class="t-lb">${t.lb}</span></button>`
+    ).join('') + '</div>';
+    area.appendChild(tilePanel);
+
+    // 表情网格(二级面板,复用原 id)
+    const emojiPanel = document.createElement('div');
+    emojiPanel.id = 'mmt-emoji-panel';
+    emojiPanel.innerHTML = '<div class="emoji-head"><button class="emoji-back">‹ 返回</button><span class="emoji-title">社团表情</span><span style="width:52px"></span></div>' +
+      '<div class="emoji-grid">' +
       Array.from({ length: EMOJI_COUNT }, (_, i) =>
         `<button class="emoji-cell" type="button" data-emoji="${i}"><img loading="lazy" src="./resources/emoji/${i}.png"></button>`
       ).join('') + '</div>';
-    btn.addEventListener('click', (e) => { e.stopPropagation(); panel.classList.toggle('open'); });
-    panel.addEventListener('click', (e) => {
-      e.stopPropagation();
+    area.appendChild(emojiPanel);
+
+    const closeAll = () => { tilePanel.classList.remove('open'); emojiPanel.classList.remove('open'); };
+    menuBtn.addEventListener('click', (e) => { e.stopPropagation(); closeAll(); tilePanel.classList.toggle('open'); });
+    document.addEventListener('click', () => closeAll());
+    [tilePanel, emojiPanel].forEach((p) => p.addEventListener('click', (e) => e.stopPropagation()));
+
+    tilePanel.querySelector('[data-t="emoji"]').onclick = () => { tilePanel.classList.remove('open'); emojiPanel.classList.add('open'); };
+    tilePanel.querySelector('[data-t="image"]').onclick = () => { closeAll(); const fi = document.getElementById('mmt-img-file'); if (fi) fi.click(); };
+    tilePanel.querySelector('[data-t="shot"]').onclick = () => { closeAll(); takeScreenshot(); };
+    tilePanel.querySelector('[data-t="clear"]').onclick = () => { closeAll(); const t = document.getElementById('mmt-clear-chat'); if (t) t.click(); };
+    emojiPanel.querySelector('.emoji-back').onclick = () => { emojiPanel.classList.remove('open'); tilePanel.classList.add('open'); };
+    emojiPanel.addEventListener('click', (e) => {
       const cell = e.target.closest('.emoji-cell');
       if (!cell) return;
       const n = Number(cell.dataset.emoji);
       if (!Number.isFinite(n) || n < 0 || n >= EMOJI_COUNT) return;
       const input = document.getElementById('chat-input');
       input.value = absUrl('./resources/emoji/' + n + '.png');
-      panel.classList.remove('open');
+      closeAll();
       window.sendMessage();
     });
-    document.addEventListener('click', () => panel.classList.remove('open'));
-    if (imgBtn) area.insertBefore(btn, imgBtn);
-    else area.appendChild(btn);
-    area.appendChild(panel);
   }
 
   function buildBoxes() {
@@ -306,7 +348,7 @@
     const header = document.querySelector('.chat-header');
     if (area && header) {
       ensureScreenshotModule();
-      buildEmojiUI();
+      buildTileBar();
       buildScreenshotUI();
       clearInterval(timer);
     } else if (++tries > 40) clearInterval(timer);
