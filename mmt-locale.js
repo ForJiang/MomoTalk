@@ -189,10 +189,10 @@
 
   // ── 「其它选项」分组：语言切换 / 窗口置顶 / 备份 / 清空本地数据 ──
   const OPT_LABELS = {
-    'zh-CN': { group: '其它选项', lang: '语言', aot: '窗口置顶', backup: '备份全部数据（选择位置）', clear: '清空本地数据', guide: '新电脑部署指南' },
-    'zh-TW': { group: '其它選項', lang: '語言', aot: '視窗置頂', backup: '備份全部資料（選擇位置）', clear: '清空本機資料', guide: '新電腦部署指南' },
-    en: { group: 'Other Options', lang: 'Language', aot: 'Always on Top', backup: 'Back Up All Data (Choose Location)', clear: 'Clear Local Data', guide: 'Deployment Guide' },
-    ja: { group: 'その他の設定', lang: '言語', aot: '常に手前に表示', backup: '全データをバックアップ（保存先を選択）', clear: 'ローカルデータを消去', guide: '新PCセットアップガイド' },
+    'zh-CN': { group: '其它选项', lang: '语言', aot: '窗口置顶', backup: '备份全部数据（选择位置）', clear: '清空本地数据', guide: '新电脑部署指南', demo: 'Demo 模式（演示对话）' },
+    'zh-TW': { group: '其它選項', lang: '語言', aot: '視窗置頂', backup: '備份全部資料（選擇位置）', clear: '清空本機資料', guide: '新電腦部署指南', demo: 'Demo 模式（演示對話）' },
+    en: { group: 'Other Options', lang: 'Language', aot: 'Always on Top', backup: 'Back Up All Data (Choose Location)', clear: 'Clear Local Data', guide: 'Deployment Guide', demo: 'Demo Mode (Sample Chat)' },
+    ja: { group: 'その他の設定', lang: '言語', aot: '常に手前に表示', backup: '全データをバックアップ（保存先を選択）', clear: 'ローカルデータを消去', guide: '新PCセットアップガイド', demo: 'デモモード（会話再生）' },
   };
   const OL = OPT_LABELS[window.__MMT_LOCALE] || OPT_LABELS['zh-CN'];
   function buildMoreOptions() {
@@ -216,6 +216,11 @@
         <span class="mmt-ico mmt-ico-box"><svg viewBox="0 0 24 24"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H18v-2c-1.66 0-3-1.34-3-3z"/></svg></span>
         <span>${OL.aot}</span>
         <input type="checkbox" id="opt-aot-toggle">
+      </div>
+      <div class="more-list-item" id="opt-demo-item" style="cursor:pointer;">
+        <span class="mmt-ico mmt-ico-box"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        <span id="opt-demo-label">Demo 模式（演示对话）</span>
+        <span class="more-arrow">›</span>
       </div>
       <div class="more-list-item" id="opt-guide-item" style="cursor:pointer;">
         <span class="mmt-ico mmt-ico-box"><svg viewBox="0 0 24 24"><path d="M19 2H6c-1.2 0-2 .9-2 2v16c0 1.1.9 2 2 2h13c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V8h10v2z"/></svg></span>
@@ -259,6 +264,9 @@
 
     // 备份 / 清空
     list.querySelector('#opt-backup-item').addEventListener('click', () => window.mmtShell.backupAll());
+    const demoItem = list.querySelector('#opt-demo-item');
+    if (demoItem) demoItem.addEventListener('click', () => window.mmtFeatures && window.mmtFeatures.startDemo && window.mmtFeatures.startDemo());
+    const dl = OL.demo; if (dl) { const el = document.getElementById('opt-demo-label'); if (el) el.textContent = dl; }
     const guideItem = list.querySelector('#opt-guide-item');
     if (guideItem) guideItem.addEventListener('click', () => window.mmtShell.openDeployGuide && window.mmtShell.openDeployGuide());
     const gl = OL.guide; if (gl) { const el = document.getElementById('opt-guide-label'); if (el) el.textContent = gl; }
