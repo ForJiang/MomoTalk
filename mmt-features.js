@@ -212,6 +212,109 @@
     document.head.appendChild(arrowCss);
   }
 
+  // ── 我的头像(老师侧):更多页"更换我的头像"入口;设置后老师消息气泡右侧显示头像 ──
+  const MYAV_KEY = 'mmt_sensei_avatar_v1';
+  const MYAV_LABELS = {
+    'zh-CN': { title: '更换我的头像', pick: '选择图片', clear: '清除头像', done: '完成', none: '未设置（老师消息不显示头像）', saved: '我的头像已更新', cleared: '已清除我的头像', fail: '头像保存失败' },
+    'zh-TW': { title: '更換我的頭像', pick: '選擇圖片', clear: '清除頭像', done: '完成', none: '未設定（老師訊息不顯示頭像）', saved: '我的頭像已更新', cleared: '已清除我的頭像', fail: '頭像儲存失敗' },
+    en: { title: 'Change My Avatar', pick: 'Choose Image', clear: 'Remove Avatar', done: 'Done', none: 'Not set (Sensei messages show no avatar)', saved: 'My avatar updated', cleared: 'My avatar removed', fail: 'Failed to save avatar' },
+    ja: { title: '自分のアイコン変更', pick: '画像を選択', clear: 'アイコン削除', done: '完了', none: '未設定（先生のメッセージに表示されません）', saved: 'アイコンを更新しました', cleared: 'アイコンを削除しました', fail: 'アイコンの保存に失敗しました' },
+  };
+  function myAvatarLabels() { return MYAV_LABELS[window.__MMT_LOCALE] || MYAV_LABELS['zh-CN']; }
+  function myAvatarGet() { try { return localStorage.getItem(MYAV_KEY) || ''; } catch { return ''; } }
+  function decorateSenseiAvatars() {
+    const av = myAvatarGet();
+    document.querySelectorAll('.msg-box.sensei').forEach((box) => {
+      let img = box.querySelector('.mmt-sensei-avatar');
+      if (!av) { if (img) img.remove(); return; }
+      if (!img) {
+        img = document.createElement('img');
+        img.className = 'mmt-sensei-avatar';
+        img.alt = '';
+        box.insertBefore(img, box.firstChild); // row-reverse:首位即视觉最右(气泡外缘)
+      }
+      if (img.getAttribute('src') !== av) img.src = av;
+    });
+  }
+  function applyMyAvatar(dataUrl) {
+    return new Promise((resolve) => {
+      if (!dataUrl) { try { localStorage.removeItem(MYAV_KEY); } catch {} resolve(''); return; }
+      // 压缩到 256px 再存,避免 localStorage 膨胀(复用上游 compressImage)
+      if (typeof window.compressImage === 'function') {
+        window.compressImage(dataUrl, 256, 0.85).then((small) => { try { localStorage.setItem(MYAV_KEY, small); } catch {} resolve(small); }).catch(() => { try { localStorage.setItem(MYAV_KEY, dataUrl); } catch {} resolve(dataUrl); });
+      } else { try { localStorage.setItem(MYAV_KEY, dataUrl); } catch {} resolve(dataUrl); }
+    });
+  }
+  function openMyAvatarModal() {
+    const L = myAvatarLabels();
+    const cur = myAvatarGet();
+    const ov = document.createElement('div');
+    ov.id = 'mmt-myavatar-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(43,34,48,.55);z-index:9001;display:flex;align-items:center;justify-content:center;padding:18px;';
+    ov.innerHTML = `
+      <div style="background:#fff;border-radius:16px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 18px 50px rgba(40,20,30,.3);">
+        <div style="padding:12px 16px;background:#e56d84;color:#fff;font-weight:600;font-size:15px;">${L.title}</div>
+        <div style="padding:18px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;">
+          <img class="mmt-myav-preview" src="${cur}" alt="" style="width:72px;height:72px;border-radius:16px;object-fit:cover;background:#f4f6f9;${cur ? '' : 'display:none;'}">
+          <div class="mmt-myav-none" style="font-size:12px;color:#8a7a83;${cur ? 'display:none;' : ''}">${L.none}</div>
+          <div style="display:flex;gap:10px;width:100%;">
+            <button class="mmt-myav-pick" style="flex:1;padding:9px 0;border-radius:10px;border:1px solid #f0c9d4;background:#fdf0f3;color:#e56d84;font-weight:600;font-size:13px;cursor:pointer;">${L.pick}</button>
+            <button class="mmt-myav-clear" style="flex:1;padding:9px 0;border-radius:10px;border:1px solid #f0c9d4;background:#fff;color:#d9534f;font-size:13px;cursor:pointer;${cur ? '' : 'display:none;'}">${L.clear}</button>
+          </div>
+        </div>
+        <div style="padding:10px 16px 14px;"><button class="mmt-myav-done" style="width:100%;padding:9px 0;border-radius:10px;border:none;background:#e56d84;color:#fff;font-weight:600;font-size:13px;cursor:pointer;">${L.done}</button></div>
+      </div>`;
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.querySelector('.mmt-myav-done').onclick = close;
+    ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+    ov.querySelector('.mmt-myav-pick').onclick = () => {
+      const fi = document.createElement('input');
+      fi.type = 'file';
+      fi.accept = 'image/*';
+      fi.style.display = 'none';
+      document.body.appendChild(fi);
+      fi.onchange = () => {
+        const file = fi.files && fi.files[0];
+        fi.remove();
+        if (!file || !file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const small = await applyMyAvatar(String(reader.result));
+          if (!small) { toast(L.fail, false); return; }
+          const pv = ov.querySelector('.mmt-myav-preview');
+          pv.src = small; pv.style.display = '';
+          ov.querySelector('.mmt-myav-none').style.display = 'none';
+          ov.querySelector('.mmt-myav-clear').style.display = '';
+          decorateSenseiAvatars();
+          toast(L.saved, true);
+        };
+        reader.readAsDataURL(file);
+      };
+      fi.click();
+    };
+    ov.querySelector('.mmt-myav-clear').onclick = async () => {
+      await applyMyAvatar('');
+      ov.querySelector('.mmt-myav-preview').style.display = 'none';
+      ov.querySelector('.mmt-myav-none').style.display = '';
+      ov.querySelector('.mmt-myav-clear').style.display = 'none';
+      decorateSenseiAvatars();
+      toast(L.cleared, true);
+    };
+  }
+  // 老师消息头像渲染:任何 .msg-box.sensei 出现(主渲染/播放动画/编辑刷新)都补头像
+  let myavScheduled = false;
+  new MutationObserver(() => {
+    if (myavScheduled) return;
+    myavScheduled = true;
+    requestAnimationFrame(() => { myavScheduled = false; try { decorateSenseiAvatars(); } catch {} });
+  }).observe(document.body, { childList: true, subtree: true });
+  const myavCss = document.createElement('style');
+  myavCss.textContent = `
+    .mmt-sensei-avatar{width:34px;height:34px;border-radius:9px;object-fit:cover;flex:none;align-self:flex-end;background:#fff;}
+  `;
+  document.head.appendChild(myavCss);
+
   // ── Demo 模式(开关):上游网页版编辑体验——手动扮演师生双方 + 回复框/旁白/播放 ──
   // 切换全程静默(不跳页面、不弹选择器):后台加示例学生与种子对话,只切徽章显隐
   // 示例学生未花:开启时若无则添加;关闭时保留学生与聊天(避免误删用户在体验中写的内容)
@@ -275,7 +378,7 @@
       try { localStorage.setItem(DEMO_LS, '0'); } catch {}
     }
   }
-  window.mmtFeatures = { showDeployGuide: () => showDeployGuide(), setDemoMode: (on) => setDemoMode(on), isDemoOn: () => { try { return localStorage.getItem(DEMO_LS) === '1'; } catch { return false; } } };
+  window.mmtFeatures = { showDeployGuide: () => showDeployGuide(), setDemoMode: (on) => setDemoMode(on), changeMyAvatar: () => openMyAvatarModal(), isDemoOn: () => { try { return localStorage.getItem(DEMO_LS) === '1'; } catch { return false; } } };
 
   // 启动时:Demo 模式若处于开启状态(上次会话),恢复身份徽章显示;并追加瓷贴
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap);
