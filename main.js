@@ -18,6 +18,9 @@ const VOICE_SRC = (() => {
 const AI_SRC = (() => {
   try { return fs.readFileSync(path.join(__dirname, 'ai-extension.js'), 'utf8'); } catch { return ''; }
 })();
+const FEATURES_SRC = (() => {
+  try { return fs.readFileSync(path.join(__dirname, 'mmt-features.js'), 'utf8'); } catch { return ''; }
+})();
 const LOCALE_JS = (() => {
   try { return fs.readFileSync(path.join(__dirname, 'mmt-locale.js'), 'utf8'); } catch { return ''; }
 })();
@@ -291,6 +294,7 @@ function createWindow(url) {
     await win.webContents.insertCSS(FRAME_CSS);
     if (VOICE_SRC) await win.webContents.executeJavaScript(VOICE_SRC);
     if (AI_SRC) await win.webContents.executeJavaScript(AI_SRC);
+    if (FEATURES_SRC) await win.webContents.executeJavaScript(FEATURES_SRC);
     // 拖入 .json 文件直接走页面自身的导入管线
     await win.webContents.executeJavaScript(`
       (() => {
