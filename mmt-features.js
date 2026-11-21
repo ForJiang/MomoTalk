@@ -1,6 +1,6 @@
 /*!
  * ForJiang · MomoTalk 桌面版
- * 桌面特性扩展:页头居中 + 部署指南浮层 + 体验模式(上游 v8 编辑/播放功能) + 瓷贴栏追加
+ * 桌面特性扩展:页头居中 + 部署指南浮层 + Demo 模式(上游 v8 编辑/播放功能) + 瓷贴栏追加
  * (社团表情/本地图片/回复框/好感故事/旁白/播放/截图均由上游 v8 原生提供)
  *
  * Author: ForJiang <https://forjiang.github.io>
@@ -117,7 +117,7 @@
           <div class="dg-h">日常使用</div>
           <div class="dg-p">聊天:发消息 AI 自动回复;点学生头像重新生成;发图 AI 会先看图再回复。</div>
           <div class="dg-p">语音:点消息旁的小喇叭,学生的克隆音色读出来;语音设置里可切 RVC 变声引擎。</div>
-          <div class="dg-p">创作:聊天页顶部「播放」可把聊天记录做成动画回放;更多面板可发回复框、好感故事、旁白;开启体验模式可手动扮演师生双方。</div>
+          <div class="dg-p">创作:聊天页顶部「播放」可把聊天记录做成动画回放;更多面板可发回复框、好感故事、旁白;开启 Demo 模式可手动扮演师生双方。</div>
           <div class="dg-p">语言:简/繁/EN/日 四语切换,学生名字同步官方译名。</div>
           <div class="dg-p">备份:菜单 文件 → 备份数据(⌘⇧B),自选保存位置;换电脑导入备份即可。</div>
           <div class="dg-h">常见问题</div>
@@ -212,85 +212,72 @@
     document.head.appendChild(arrowCss);
   }
 
-  // ── 体验模式(开关):上游网页版编辑体验——手动扮演师生双方 + 回复框/旁白/播放 ──
+  // ── Demo 模式(开关):上游网页版编辑体验——手动扮演师生双方 + 回复框/旁白/播放 ──
+  // 切换全程静默(不跳页面、不弹选择器):后台加示例学生与种子对话,只切徽章显隐
   // 示例学生未花:开启时若无则添加;关闭时保留学生与聊天(避免误删用户在体验中写的内容)
   const DEMO_LS = 'mmt_demo_mode_v1';
   const DEMO_STUDENT_CN = '圣园未花';
-  async function setDemoMode(on) {
-    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  function demoStudentId() {
+    try {
+      return Object.keys(libraryById).find((id) => {
+        const n = String((libraryById[id] || {}).displayName || '').replace(/\s+/g, '');
+        return n === DEMO_STUDENT_CN;
+      }) || null;
+    } catch { return null; }
+  }
+  function setDemoMode(on) {
     try {
       if (on) {
         if (window.mmtAi) { window.mmtAi._demoAiPrev = window.mmtAi.settings.enabled; window.mmtAi.settings.enabled = false; }
         if (window.mmtVoice) { window.mmtVoice._demoAutoPrev = window.mmtVoice.settings.auto; window.mmtVoice.settings.auto = false; }
-        if (typeof switchToList === 'function') switchToList();
-        await wait(200);
-        // 已有未花(用户自己加过)直接打开其聊天,不重建、不删用户数据(v8 displayName 带空格,匹配先去空格)
-        const existing = [...document.querySelectorAll('.contact-item')].find((it) => (it.textContent || '').replace(/\s+/g, '').includes(DEMO_STUDENT_CN));
-        if (!existing) {
-          if (typeof switchToMore === 'function') switchToMore();
-          await wait(200);
-          if (typeof openStudentPicker === 'function') openStudentPicker();
-          await wait(500);
-          const target = [...document.querySelectorAll('.picker-item')].find((el) => {
-            const n = (el.querySelector('.picker-name') || {}).textContent || '';
-            return n.replace(/\s+/g, '') === DEMO_STUDENT_CN && !el.classList.contains('added');
-          });
-          if (!target) throw new Error('demo student not available');
-          target.click();
-          await wait(300);
-          [...document.querySelectorAll('.modal-actions .modal-btn, .modal-overlay button')].forEach((b) => { if (/完成|添加|确定/.test(b.textContent)) b.click(); });
-          await wait(400);
+        // 后台添加示例学生(不打开选择器、不切页面);已有则复用(v8 displayName 带空格,匹配先去空格)
+        const sid = demoStudentId();
+        if (!sid) throw new Error('demo student not in library');
+        let entry = myStudents.find((s) => Number(s.studentId) === Number(sid));
+        if (!entry && typeof addStudentToMyList === 'function') {
+          const chatId = addStudentToMyList(Number(sid));
+          entry = myStudents.find((s) => String(s.id) === String(chatId));
         }
-        if (typeof switchToList === 'function') switchToList();
-        await wait(200);
-        // 打开未花聊天:点击后必须等到 currentStudentId 生效(否则种子会写进 chats[null])
-        for (let attempt = 0; attempt < 5; attempt++) {
-          const items = document.querySelectorAll('.contact-item');
-          for (const it of items) { if ((it.textContent || '').replace(/\s+/g, '').includes(DEMO_STUDENT_CN)) { it.click(); break; } }
-          await wait(600);
-          const s1 = window.__mmtChatState && window.__mmtChatState();
-          if (s1 && s1.id != null) break;
-        }
-        const st = window.__mmtChatState && window.__mmtChatState();
-        if (!st || st.id == null) throw new Error('no chat');
-        if (st.count === 0) {
-          // 示例对话:静态种子(含回复框示例),无 AI、无自动回放
+        if (!entry) throw new Error('demo student add failed');
+        const chatId = entry.id;
+        if (typeof renderContactList === 'function') renderContactList();
+        // 种子对话(含回复框示例):仅在该学生还没有聊天记录时写入
+        if (!chats[chatId] || chats[chatId].length === 0) {
           const uid = (p) => p + '_' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
           const t0 = Date.now();
           const mkItem = (o) => Object.assign({ id: uid('i') }, o);
           const mkBox = (role, items, dt) => ({ id: uid('b'), role, time: t0 + dt, items });
-          const seed = [
+          chats[chatId] = [
             mkBox('sensei', [mkItem({ type: 'text', text: '未花，今天也超级可爱呢。' })], 0),
             mkBox('student', [mkItem({ type: 'text', text: '诶嘿嘿☆ 那是当然的！不愧是未花大人！' })], 800),
             mkBox('sensei', [mkItem({ type: 'reply', title: '回复', options: ['周末一起去逛街吧。', '下次再说吧。'] })], 1600),
             mkBox('student', [mkItem({ type: 'text', text: '锵锵～☆ 已经决定和老师逛街了！输入框直接打字，或点上方「播放」看动画哦～' })], 2400),
           ];
-          chats[st.id] = seed;
           saveChats();
-          if (typeof renderChat === 'function') renderChat();
         }
-        // 显示身份切换徽章(体验模式核心:手动扮演双方)
+        // 当前若恰好开着该学生的聊天,刷新渲染;否则不动当前页面
+        const st = window.__mmtChatState && window.__mmtChatState();
+        if (st && String(st.id) === String(chatId) && typeof renderChat === 'function') renderChat();
+        // 显示身份切换徽章(Demo 模式核心:手动扮演双方)
         const rs = document.getElementById('role-switch');
         if (rs) rs.style.removeProperty('display');
-        toast('体验模式已开启：可手动扮演师生双方、发回复框/旁白、播放动画（无 AI）', true);
+        toast('Demo 模式已开启（无 AI，可手动扮演师生双方，支持回复框/旁白/播放）', true);
       } else {
-        if (typeof switchToList === 'function') switchToList();
-        await wait(200);
         if (window.mmtAi) window.mmtAi.settings.enabled = window.mmtAi._demoAiPrev !== undefined ? window.mmtAi._demoAiPrev : true;
         if (window.mmtVoice) window.mmtVoice.settings.auto = window.mmtVoice._demoAutoPrev !== undefined ? window.mmtVoice._demoAutoPrev : false;
         const rs = document.getElementById('role-switch');
         if (rs) rs.style.setProperty('display', 'none');
-        toast('已退出体验模式（示例学生与聊天记录已保留，可长按联系人删除）', true);
+        toast('已退出 Demo 模式（示例学生与聊天记录已保留，可长按联系人删除）', true);
       }
       try { localStorage.setItem(DEMO_LS, on ? '1' : '0'); } catch {}
     } catch (e) {
-      toast('体验模式切换失败: ' + String(e && e.message || e).slice(0, 60), false);
+      toast('Demo 模式切换失败: ' + String(e && e.message || e).slice(0, 60), false);
       try { localStorage.setItem(DEMO_LS, '0'); } catch {}
     }
   }
   window.mmtFeatures = { showDeployGuide: () => showDeployGuide(), setDemoMode: (on) => setDemoMode(on), isDemoOn: () => { try { return localStorage.getItem(DEMO_LS) === '1'; } catch { return false; } } };
 
-  // 启动时:体验模式若处于开启状态(上次会话),恢复身份徽章显示;并追加瓷贴
+  // 启动时:Demo 模式若处于开启状态(上次会话),恢复身份徽章显示;并追加瓷贴
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap);
   else bootstrap();
   function bootstrap() {

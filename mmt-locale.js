@@ -189,10 +189,10 @@
 
   // ── 「其它选项」分组：语言切换 / 窗口置顶 / 备份 / 清空本地数据 ──
   const OPT_LABELS = {
-    'zh-CN': { group: '其它选项', lang: '语言', aot: '窗口置顶', backup: '备份全部数据（选择位置）', clear: '清空本地数据', guide: '新电脑部署指南', demo: '体验模式（网页版编辑/播放）' },
-    'zh-TW': { group: '其它選項', lang: '語言', aot: '視窗置頂', backup: '備份全部資料（選擇位置）', clear: '清空本機資料', guide: '新電腦部署指南', demo: '體驗模式（網頁版編輯/播放）' },
-    en: { group: 'Other Options', lang: 'Language', aot: 'Always on Top', backup: 'Back Up All Data (Choose Location)', clear: 'Clear Local Data', guide: 'Deployment Guide', demo: 'Experience Mode (Editor & Playback)' },
-    ja: { group: 'その他の設定', lang: '言語', aot: '常に手前に表示', backup: '全データをバックアップ（保存先を選択）', clear: 'ローカルデータを消去', guide: '新PCセットアップガイド', demo: '体験モード（編集・再生）' },
+    'zh-CN': { group: '其它选项', lang: '语言', aot: '窗口置顶', backup: '备份全部数据（选择位置）', clear: '清空本地数据', guide: '新电脑部署指南', demo: 'Demo 模式（手动编辑与播放）' },
+    'zh-TW': { group: '其它選項', lang: '語言', aot: '視窗置頂', backup: '備份全部資料（選擇位置）', clear: '清空本機資料', guide: '新電腦部署指南', demo: 'Demo 模式（手動編輯與播放）' },
+    en: { group: 'Other Options', lang: 'Language', aot: 'Always on Top', backup: 'Back Up All Data (Choose Location)', clear: 'Clear Local Data', guide: 'Deployment Guide', demo: 'Demo Mode (Manual Edit & Playback)' },
+    ja: { group: 'その他の設定', lang: '言語', aot: '常に手前に表示', backup: '全データをバックアップ（保存先を選択）', clear: 'ローカルデータを消去', guide: '新PCセットアップガイド', demo: 'デモモード（編集・再生）' },
   };
   const OL = OPT_LABELS[window.__MMT_LOCALE] || OPT_LABELS['zh-CN'];
   function buildMoreOptions() {
@@ -334,7 +334,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', removeVideoUi);
   else removeVideoUi();
 
-  // ── 聊天框旁的身份切换按钮（老师/学生）：AI 模式默认隐藏，体验模式（mmt-features setDemoMode）显示 ──
+  // ── 聊天框旁的身份切换按钮（老师/学生）：AI 模式默认隐藏，Demo 模式（mmt-features setDemoMode）显示 ──
   function hideRoleSwitch() {
     const el = document.getElementById('role-switch');
     if (el) el.style.setProperty('display', 'none');
