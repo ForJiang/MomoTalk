@@ -76,6 +76,45 @@
     #mmt-deploy-overlay .dg-foot button:hover{filter:brightness(.97);}
   `;
   document.head.appendChild(Object.assign(document.createElement('style'), { textContent: CSS }));
+  // 页头标题居中:列表页 logo+标题、聊天页头像+名字
+  // (.header-logo 自带 margin-right:auto 会压过 justify-content,需一并覆盖)
+  const HC = document.createElement('style');
+  HC.textContent = `
+    .header, .chat-header { justify-content: center; padding-left: 16px !important; padding-right: 16px !important; }
+    .header .header-logo { margin-left: auto !important; margin-right: auto !important; }
+    .chat-header .back-btn { position: absolute; left: calc(12px + env(safe-area-inset-left)); top: 50%; transform: translateY(-50%); }
+  `;
+  document.head.appendChild(HC);
+
+  // 旧令牌绝对 URL 清洗:令牌持久化之前的启动会话随机生成前缀,
+  // 历史消息里的社团表情链接(/<旧token>/resources/emoji/…)重启后 404;
+  // 统一改写为当前前缀(localStorage 与已载入内存的 chats 各修一份)
+  function fixEmojiUrls() {
+    try {
+      const cur = location.origin + location.pathname.replace(/\/[^/]*$/, '/');
+      const re = /https?:\/\/127\.0\.0\.1:\d+\/[A-Za-z0-9_-]+\/(resources\/emoji\/\d+\.png)/g;
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        const v = localStorage.getItem(k);
+        if (v && v.indexOf('resources/emoji/') !== -1) {
+          const nv = v.replace(re, cur + '$1');
+          if (nv !== v) { try { localStorage.setItem(k, nv); } catch {} }
+        }
+      }
+      if (typeof chats !== 'undefined' && chats && typeof chats === 'object') {
+        Object.values(chats).forEach((arr) => {
+          if (!Array.isArray(arr)) return;
+          arr.forEach((m) => {
+            if (m && typeof m.text === 'string' && m.text.indexOf('resources/emoji/') !== -1) {
+              m.text = m.text.replace(re, cur + '$1');
+            }
+          });
+        });
+      }
+    } catch {}
+  }
+  fixEmojiUrls();
+  setTimeout(fixEmojiUrls, 800);
 
   function ensureScreenshotModule() {
     if (window.ChatScreenshot) return;
@@ -338,7 +377,79 @@
     }
   }
 
-  window.mmtFeatures = { startDemo: () => startDemo(), showDeployGuide: () => showDeployGuide() };
+  // ── Demo 模式(开关):内置演示会话,无需 AI ──
+  const DEMO_LS = 'mmt_demo_mode_v1';
+  const DEMO_STUDENT_CN = '圣园未花';
+  async function setDemoMode(on) {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    try {
+      if (on) {
+        if (window.mmtAi) { window.mmtAi._demoAiPrev = window.mmtAi.settings.enabled; window.mmtAi.settings.enabled = false; }
+        if (window.mmtVoice) { window.mmtVoice._demoAutoPrev = window.mmtVoice.settings.auto; window.mmtVoice.settings.auto = false; }
+        if (typeof switchToList === 'function') switchToList();
+        await wait(200);
+        if (typeof switchToMore === 'function') switchToMore();
+        await wait(200);
+        if (typeof openStudentPicker === 'function') openStudentPicker();
+        await wait(500);
+        const target = [...document.querySelectorAll('.picker-item')].find((el) => {
+          const n = (el.querySelector('.picker-name') || {}).textContent || '';
+          return n.replace(/\s+/g, '') === DEMO_STUDENT_CN && !el.classList.contains('added');
+        });
+        if (!target) throw new Error('demo student not available');
+        target.click();
+        await wait(300);
+        [...document.querySelectorAll('.modal-actions .modal-btn, .modal-overlay button')].forEach((b) => { if (/完成|添加|确定/.test(b.textContent)) b.click(); });
+        await wait(400);
+        if (typeof switchToList === 'function') switchToList();
+        await wait(200);
+        const items = document.querySelectorAll('.contact-item');
+        for (const it of items) { if ((it.textContent || '').includes(DEMO_STUDENT_CN)) { it.click(); break; } }
+        await wait(600);
+        const st = window.__mmtChatState && window.__mmtChatState();
+        if (!st) throw new Error('no chat');
+        if (st.history.length === 0) {
+          const seed = [
+            { role: 'sensei', text: '未花，今天也超级可爱呢。' },
+            { role: 'student', text: '诶嘿嘿☆ 那是当然的！不愧是未花大人！' },
+            { role: 'sensei', text: '周末有什么打算吗？' },
+            { role: 'student', text: '锵锵～☆ 和老师一起去逛街！已经决定了！' },
+            { role: 'sensei', text: '好呀，那就这么说定了。' },
+            { role: 'student', text: '诶嘿嘿☆ 拉钩！下面的输入框可以直接打字体验哦，老师～' },
+          ];
+          seed.forEach((m) => { if (m.role === 'student') st.pushStudent(m.text); else { const i = document.getElementById('chat-input'); i.value = m.text; window.sendMessage(); } });
+        }
+        toast('Demo 模式已开启（此会话为演示，不含 AI）', true);
+      } else {
+        if (typeof switchToList === 'function') switchToList();
+        await wait(200);
+        try {
+          for (const s of [...myStudents]) {
+            const n = String(((libraryById[s.id] || {}).displayName || '')).replace(/\s+/g, '');
+            if (n === DEMO_STUDENT_CN) { delete chats[s.id]; myStudents = myStudents.filter((x) => x.id !== s.id); }
+          }
+          saveMyStudents(); saveChats(); renderContactList();
+        } catch {}
+        if (window.mmtAi) window.mmtAi.settings.enabled = window.mmtAi._demoAiPrev !== undefined ? window.mmtAi._demoAiPrev : true;
+        if (window.mmtVoice) window.mmtVoice.settings.auto = window.mmtVoice._demoAutoPrev !== undefined ? window.mmtVoice._demoAutoPrev : false;
+        toast('已退出 Demo 模式', true);
+      }
+      try { localStorage.setItem(DEMO_LS, on ? '1' : '0'); } catch {}
+    } catch (e) {
+      toast('Demo 切换失败: ' + String(e && e.message || e).slice(0, 60), false);
+      try { localStorage.setItem(DEMO_LS, '0'); } catch {}
+    }
+  }
+  function cnNameOfInFeatures() {
+    try {
+      const sid = window.__mmtChatState ? (window.__mmtChatState().id) : null;
+      const s = sid != null ? (window.libraryById || {})[sid] : null;
+      const f = (s && s.familyName && (s.familyName.cn || s.familyName.nm)) || '';
+      const g = (s && s.givenName && (s.givenName.cn || s.givenName.nm)) || '';
+      return (f + g).trim();
+    } catch { return ''; }
+  }
+  window.mmtFeatures = { startDemo: () => startDemo(), showDeployGuide: () => showDeployGuide(), setDemoMode: (on) => setDemoMode(on), isDemoOn: () => { try { return localStorage.getItem(DEMO_LS) === '1'; } catch { return false; } } };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureScreenshotModule);
   else ensureScreenshotModule();

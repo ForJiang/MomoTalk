@@ -34,8 +34,21 @@ const SUPPORTED_LOCALES = ['zh-CN', 'zh-TW', 'en', 'ja'];
 let SHELL_LOCALE = 'zh-CN';
 let servingPort = 43110; // 实际服务端口（图片 URL 用，须稳定）
 
-// 本地服务随机令牌：所有页面资源走 /<token>/ 前缀，同机其它进程无法探测读取
-const TOKEN = require('crypto').randomBytes(18).toString('base64url');
+// 本地服务随机令牌：所有页面资源走 /<token>/ 前缀，同机其它进程无法探测读取。
+// 令牌持久化：聊天历史里存的是带 /<token>/ 前缀的图片 URL（如社团表情），
+// 若每次启动重新生成，重启后历史里的旧链接全部 404；令牌只存 userData，不外泄。
+let TOKEN = '';
+try {
+  const tokenFile = path.join(app.getPath('userData'), 'server-token');
+  TOKEN = fs.readFileSync(tokenFile, 'utf8').trim();
+  if (!/^[A-Za-z0-9_-]{16,64}$/.test(TOKEN)) throw new Error('invalid token file');
+} catch {
+  TOKEN = require('crypto').randomBytes(18).toString('base64url');
+  try {
+    fs.mkdirSync(app.getPath('userData'), { recursive: true });
+    fs.writeFileSync(path.join(app.getPath('userData'), 'server-token'), TOKEN);
+  } catch {}
+}
 const BASE = '/' + TOKEN;
 
 // 单实例锁：避免两个实例同时读写同一份聊天数据（自测模式豁免）
