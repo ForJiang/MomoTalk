@@ -189,10 +189,10 @@
 
   // ── 「其它选项」分组：语言切换 / 窗口置顶 / 备份 / 清空本地数据 ──
   const OPT_LABELS = {
-    'zh-CN': { group: '其它选项', lang: '语言', aot: '窗口置顶', backup: '备份全部数据（选择位置）', clear: '清空本地数据', guide: '新电脑部署指南', demo: 'Demo 模式（手动编辑与播放）', myav: '更换我的头像' },
-    'zh-TW': { group: '其它選項', lang: '語言', aot: '視窗置頂', backup: '備份全部資料（選擇位置）', clear: '清空本機資料', guide: '新電腦部署指南', demo: 'Demo 模式（手動編輯與播放）', myav: '更換我的頭像' },
-    en: { group: 'Other Options', lang: 'Language', aot: 'Always on Top', backup: 'Back Up All Data (Choose Location)', clear: 'Clear Local Data', guide: 'Deployment Guide', demo: 'Demo Mode (Manual Edit & Playback)', myav: 'Change My Avatar' },
-    ja: { group: 'その他の設定', lang: '言語', aot: '常に手前に表示', backup: '全データをバックアップ（保存先を選択）', clear: 'ローカルデータを消去', guide: '新PCセットアップガイド', demo: 'デモモード（編集・再生）', myav: '自分のアイコン変更' },
+    'zh-CN': { group: '其它选项', lang: '语言', aot: '窗口置顶', backup: '备份全部数据（选择位置）', clear: '清空本地数据', guide: '新电脑部署指南', demo: 'Demo 模式（手动编辑与播放）', myav: '更换我的头像', myavhide: '显示我的头像' },
+    'zh-TW': { group: '其它選項', lang: '語言', aot: '視窗置頂', backup: '備份全部資料（選擇位置）', clear: '清空本機資料', guide: '新電腦部署指南', demo: 'Demo 模式（手動編輯與播放）', myav: '更換我的頭像', myavhide: '顯示我的頭像' },
+    en: { group: 'Other Options', lang: 'Language', aot: 'Always on Top', backup: 'Back Up All Data (Choose Location)', clear: 'Clear Local Data', guide: 'Deployment Guide', demo: 'Demo Mode (Manual Edit & Playback)', myav: 'Change My Avatar', myavhide: 'Show My Avatar' },
+    ja: { group: 'その他の設定', lang: '言語', aot: '常に手前に表示', backup: '全データをバックアップ（保存先を選択）', clear: 'ローカルデータを消去', guide: '新PCセットアップガイド', demo: 'デモモード（編集・再生）', myav: '自分のアイコン変更', myavhide: '自分のアイコンを表示' },
   };
   const OL = OPT_LABELS[window.__MMT_LOCALE] || OPT_LABELS['zh-CN'];
   function buildMoreOptions() {
@@ -221,6 +221,11 @@
         <span class="mmt-ico mmt-ico-box"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
         <span>${OL.myav}</span>
         <span class="more-arrow">›</span>
+      </div>
+      <div class="more-list-item" id="opt-myavhide-item">
+        <span class="mmt-ico mmt-ico-box"><svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg></span>
+        <span>${OL.myavhide}</span>
+        <input type="checkbox" id="opt-myavhide-toggle">
       </div>
       <div class="more-list-item" id="opt-guide-item" style="cursor:pointer;">
         <span class="mmt-ico mmt-ico-box"><svg viewBox="0 0 24 24"><path d="M19 2H6c-1.2 0-2 .9-2 2v16c0 1.1.9 2 2 2h13c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V8h10v2z"/></svg></span>
@@ -284,6 +289,15 @@
     if (guideItemEl) guideItemEl.addEventListener('click', () => window.mmtFeatures && window.mmtFeatures.showDeployGuide && window.mmtFeatures.showDeployGuide());
     const myavEl = list.querySelector('#opt-myav-item');
     if (myavEl) myavEl.addEventListener('click', () => window.mmtFeatures && window.mmtFeatures.changeMyAvatar && window.mmtFeatures.changeMyAvatar());
+    // 显示我的头像开关(默认开;关闭后老师消息不显示自定义头像)
+    const myavHide = list.querySelector('#opt-myavhide-toggle');
+    if (myavHide) {
+      myavHide.checked = window.mmtFeatures && window.mmtFeatures.myAvatarShow ? window.mmtFeatures.myAvatarShow() : true;
+      myavHide.addEventListener('change', () => { window.mmtFeatures && window.mmtFeatures.setMyAvatarShow && window.mmtFeatures.setMyAvatarShow(myavHide.checked); });
+      const row = list.querySelector('#opt-myavhide-item');
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', (e) => { if (e.target === myavHide) return; myavHide.checked = !myavHide.checked; myavHide.dispatchEvent(new Event('change')); });
+    }
     const dl = OL.demo; if (dl) { const el = document.getElementById('opt-demo-label'); if (el) el.textContent = dl; }
 
     list.querySelector('#opt-clear-item').addEventListener('click', () => window.mmtShell.clearAll());

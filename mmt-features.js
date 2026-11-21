@@ -222,11 +222,19 @@
   };
   function myAvatarLabels() { return MYAV_LABELS[window.__MMT_LOCALE] || MYAV_LABELS['zh-CN']; }
   function myAvatarGet() { try { return localStorage.getItem(MYAV_KEY) || ''; } catch { return ''; } }
+  // 头像显隐开关:更多页「显示我的头像」控制(默认显示)
+  const MYAV_SHOW_LS = 'mmt_sensei_avatar_show_v1';
+  function myAvatarShow() { try { return localStorage.getItem(MYAV_SHOW_LS) !== '0'; } catch { return true; } }
+  function setMyAvatarShow(visible) {
+    try { localStorage.setItem(MYAV_SHOW_LS, visible ? '1' : '0'); } catch {}
+    decorateSenseiAvatars();
+  }
   function decorateSenseiAvatars() {
     const av = myAvatarGet();
+    const show = myAvatarShow();
     document.querySelectorAll('.msg-box.sensei').forEach((box) => {
       let img = box.querySelector('.mmt-sensei-avatar');
-      if (!av) { if (img) img.remove(); return; }
+      if (!av || !show) { if (img) img.remove(); return; }
       if (!img) {
         img = document.createElement('img');
         img.className = 'mmt-sensei-avatar';
@@ -311,7 +319,7 @@
   }).observe(document.body, { childList: true, subtree: true });
   const myavCss = document.createElement('style');
   myavCss.textContent = `
-    .mmt-sensei-avatar{width:34px;height:34px;border-radius:9px;object-fit:cover;flex:none;align-self:flex-end;background:#fff;}
+    .mmt-sensei-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none;align-self:flex-end;background:#dfe7ef;border:1px solid rgba(0,0,0,.04);}
   `;
   document.head.appendChild(myavCss);
 
@@ -378,7 +386,7 @@
       try { localStorage.setItem(DEMO_LS, '0'); } catch {}
     }
   }
-  window.mmtFeatures = { showDeployGuide: () => showDeployGuide(), setDemoMode: (on) => setDemoMode(on), changeMyAvatar: () => openMyAvatarModal(), isDemoOn: () => { try { return localStorage.getItem(DEMO_LS) === '1'; } catch { return false; } } };
+  window.mmtFeatures = { showDeployGuide: () => showDeployGuide(), setDemoMode: (on) => setDemoMode(on), changeMyAvatar: () => openMyAvatarModal(), setMyAvatarShow: (v) => setMyAvatarShow(v), myAvatarShow: () => myAvatarShow(), isDemoOn: () => { try { return localStorage.getItem(DEMO_LS) === '1'; } catch { return false; } } };
 
   // 启动时:Demo 模式若处于开启状态(上次会话),恢复身份徽章显示;并追加瓷贴
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap);
