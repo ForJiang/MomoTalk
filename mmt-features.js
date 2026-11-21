@@ -1,12 +1,12 @@
 /*!
  * ForJiang · MomoTalk 桌面版
- * 新功能扩展:社团表情包 + 聊天截图(Canvas 长图,基于上游 chat_screenshot.js)+ Demo 模式
+ * 桌面特性扩展:页头居中 + 部署指南浮层 + 体验模式(上游 v8 编辑/播放功能) + 瓷贴栏追加
+ * (社团表情/本地图片/回复框/好感故事/旁白/播放/截图均由上游 v8 原生提供)
  *
  * Author: ForJiang <https://forjiang.github.io>
  * Copyright (c) 2026 ForJiang. Released under the GPL-3.0-or-later License.
  */
 (() => {
-  const EMOJI_COUNT = 183;
   const toast = (msg, ok) => {
     document.querySelectorAll('.mmt-voice-toast, .mmt-ai-toast, .mmt-img-toast').forEach((t) => t.remove());
     const el = document.createElement('div');
@@ -17,39 +17,6 @@
     setTimeout(() => el.remove(), 4200);
   };
   const CSS = `
-    #mmt-img-btn{display:none !important;}
-    #mmt-menu-btn{width:38px;height:38px;border-radius:12px;cursor:pointer;
-      background:#fdf0f3;border:1px solid #f3d9e0;color:#e56d84;display:flex;align-items:center;justify-content:center;
-      flex:none;transition:filter .15s,background .15s;padding:0;margin-bottom:1px;align-self:flex-end;}
-    #mmt-menu-btn:hover{background:#fbe3e9;}
-    #mmt-menu-btn:active{filter:brightness(.95);}
-    #mmt-menu-btn svg{width:20px;height:20px;}
-    #mmt-tile-panel{position:absolute;left:8px;right:8px;bottom:60px;z-index:500;display:none;
-      background:#fbfbfd;border-radius:18px;box-shadow:0 10px 30px rgba(60,35,50,.18);padding:14px 10px 8px;}
-    #mmt-tile-panel.open{display:block;animation:mmtTileIn .18s ease;}
-    @keyframes mmtTileIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-    #mmt-tile-panel .tile-row{display:flex;gap:6px;justify-content:space-around;}
-    #mmt-tile-panel .tile{flex:1;max-width:96px;display:flex;flex-direction:column;align-items:center;gap:6px;
-      border:none;background:transparent;cursor:pointer;padding:4px 2px;border-radius:12px;}
-    #mmt-tile-panel .tile:hover{background:#f4f4f6;}
-    #mmt-tile-panel .tile .t-ico{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;}
-    #mmt-tile-panel .tile .t-ico svg{width:26px;height:26px;}
-    #mmt-tile-panel .tile .t-lb{font-size:12px;color:#3a3a44;}
-    #mmt-emoji-panel{position:absolute;left:8px;right:8px;bottom:60px;z-index:501;display:none;
-      background:#fbfbfd;border-radius:18px;box-shadow:0 10px 30px rgba(60,35,50,.18);padding:12px;max-height:320px;overflow-y:auto;}
-    #mmt-emoji-panel.open{display:block;animation:mmtTileIn .18s ease;}
-    #mmt-emoji-panel .emoji-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
-    #mmt-emoji-panel .emoji-back{border:none;background:transparent;color:#e56d84;font-size:13px;cursor:pointer;padding:2px 6px;}
-    #mmt-emoji-panel .emoji-title{font-size:13px;color:#3a3a44;font-weight:600;}
-    #mmt-emoji-panel .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;}
-    #mmt-emoji-panel .emoji-cell{border:none;background:transparent;cursor:pointer;padding:2px;border-radius:8px;}
-    #mmt-emoji-panel .emoji-cell:hover{background:#fdf0f3;}
-    #mmt-emoji-panel .emoji-cell img{width:100%;display:block;}
-    #mmt-screenshot-btn{position:absolute;right:52px;top:50%;transform:translateY(-50%);width:30px;height:30px;
-      border-radius:9px;border:none;background:rgba(255,255,255,.22);color:#fff;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;padding:0;}
-    #mmt-screenshot-btn:hover{background:rgba(255,255,255,.34);}
-    #mmt-screenshot-btn svg{width:16px;height:16px;display:block;}
     .mmt-shot-preview{max-width:100%;max-height:52vh;display:block;margin:0 auto;border-radius:10px;
       border:1px solid #eee0e5;}
     #mmt-deploy-overlay{position:fixed;inset:0;background:rgba(43,34,48,.55);z-index:9000;
@@ -76,27 +43,26 @@
     #mmt-deploy-overlay .dg-foot button:hover{filter:brightness(.97);}
   `;
   document.head.appendChild(Object.assign(document.createElement('style'), { textContent: CSS }));
-  // 页头标题居中:列表页 logo+标题、聊天页头像+名字
-  // (.header-logo 自带 margin-right:auto 会压过 justify-content,需一并覆盖)
+  // 列表页页头标题居中(.header-logo 自带 margin-right:auto 会压过 justify-content,需一并覆盖);
+  // 聊天页页头上游 v8 已原生居中,不动(其播放/截图按钮为流内元素)
   const HC = document.createElement('style');
   HC.textContent = `
-    .header, .chat-header { justify-content: center; padding-left: 16px !important; padding-right: 16px !important; }
+    .header { justify-content: center; }
     .header .header-logo { margin-left: auto !important; margin-right: auto !important; }
-    .chat-header .back-btn { position: absolute; left: calc(12px + env(safe-area-inset-left)); top: 50%; transform: translateY(-50%); }
   `;
   document.head.appendChild(HC);
 
   // 旧令牌绝对 URL 清洗:令牌持久化之前的启动会话随机生成前缀,
-  // 历史消息里的社团表情链接(/<旧token>/resources/emoji/…)重启后 404;
-  // 统一改写为当前前缀(localStorage 与已载入内存的 chats 各修一份)
+  // 历史消息里的表情/图片链接(/<旧token>/resources/…)重启后 404;
+  // 统一改写为当前前缀(localStorage 与已载入内存的 chats 各修一份,v8 items 结构)
   function fixEmojiUrls() {
     try {
       const cur = location.origin + location.pathname.replace(/\/[^/]*$/, '/');
-      const re = /https?:\/\/127\.0\.0\.1:\d+\/[A-Za-z0-9_-]+\/(resources\/emoji\/\d+\.png)/g;
+      const re = /https?:\/\/127\.0\.0\.1:\d+\/[A-Za-z0-9_-]+\/(resources\/(?:emoji\/\d+\.png|[^"'\s)]*\.(?:png|jpe?g|gif|webp)))/g;
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const k = localStorage.key(i);
         const v = localStorage.getItem(k);
-        if (v && v.indexOf('resources/emoji/') !== -1) {
+        if (v && v.indexOf('127.0.0.1:') !== -1 && v.indexOf('/resources/') !== -1) {
           const nv = v.replace(re, cur + '$1');
           if (nv !== v) { try { localStorage.setItem(k, nv); } catch {} }
         }
@@ -104,10 +70,15 @@
       if (typeof chats !== 'undefined' && chats && typeof chats === 'object') {
         Object.values(chats).forEach((arr) => {
           if (!Array.isArray(arr)) return;
-          arr.forEach((m) => {
-            if (m && typeof m.text === 'string' && m.text.indexOf('resources/emoji/') !== -1) {
-              m.text = m.text.replace(re, cur + '$1');
-            }
+          arr.forEach((b) => {
+            if (!b || !Array.isArray(b.items)) return;
+            b.items.forEach((it) => {
+              ['src', 'text'].forEach((f) => {
+                if (typeof it[f] === 'string' && it[f].indexOf('127.0.0.1:') !== -1) {
+                  it[f] = it[f].replace(re, cur + '$1');
+                }
+              });
+            });
           });
         });
       }
@@ -116,149 +87,7 @@
   fixEmojiUrls();
   setTimeout(fixEmojiUrls, 800);
 
-  function ensureScreenshotModule() {
-    if (window.ChatScreenshot) return;
-    const sc = document.createElement('script');
-    sc.src = './resources/chat_screenshot.js';
-    document.head.appendChild(sc);
-  }
-
-  function absUrl(rel) {
-    try { return new URL(rel, location.href).href; } catch { return rel; }
-  }
-
   function state() { return window.__mmtChatState && window.__mmtChatState(); }
-
-  const ICONS = {
-    emoji: '<svg viewBox="0 0 24 24" fill="none" stroke="#3a3a44" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c.9 1.2 2.1 1.8 3.5 1.8s2.6-.6 3.5-1.8"/><circle cx="9" cy="9.5" r="1" fill="#3a3a44" stroke="none"/><circle cx="15" cy="9.5" r="1" fill="#3a3a44" stroke="none"/></svg>',
-    image: '<svg viewBox="0 0 24 24" fill="#5b8fd9"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 16l5-5 4 4 3-3 6 6v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1z" fill="#fff" opacity=".9"/><circle cx="9" cy="9" r="1.6" fill="#fff"/></svg>',
-    shot: '<svg viewBox="0 0 24 24" fill="none" stroke="#3a3a44" stroke-width="1.7"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.6"/><path d="M8 6l1.2-2h5.8L16 6"/></svg>',
-    clear: '<svg viewBox="0 0 24 24" fill="none" stroke="#3a3a44" stroke-width="1.7"><path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13"/></svg>',
-  };
-  function buildTileBar() {
-    const area = document.querySelector('.chat-input-area');
-    if (!area || document.getElementById('mmt-menu-btn')) return;
-    const menuBtn = document.createElement('button');
-    menuBtn.id = 'mmt-menu-btn';
-    menuBtn.title = '更多功能';
-    menuBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3zm0 7a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3zm0 7a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3z"/></svg>';
-    area.insertBefore(menuBtn, area.firstChild);
-
-    const tilePanel = document.createElement('div');
-    tilePanel.id = 'mmt-tile-panel';
-    const tiles = [
-      { id: 'emoji', lb: '社团表情', ico: ICONS.emoji, bg: '#fdf0f3' },
-      { id: 'image', lb: '本地图片', ico: ICONS.image, bg: '#eaf1fd' },
-      { id: 'shot', lb: '聊天截图', ico: ICONS.shot, bg: '#eef0f3' },
-      { id: 'clear', lb: '清空聊天', ico: ICONS.clear, bg: '#f4f4f6' },
-    ];
-    tilePanel.innerHTML = '<div class="tile-row">' + tiles.map((t) =>
-      `<button class="tile" type="button" data-t="${t.id}"><span class="t-ico" style="background:${t.bg}">${t.ico}</span><span class="t-lb">${t.lb}</span></button>`
-    ).join('') + '</div>';
-    area.appendChild(tilePanel);
-
-    // 表情网格(二级面板,复用原 id)
-    const emojiPanel = document.createElement('div');
-    emojiPanel.id = 'mmt-emoji-panel';
-    emojiPanel.innerHTML = '<div class="emoji-head"><button class="emoji-back">‹ 返回</button><span class="emoji-title">社团表情</span><span style="width:52px"></span></div>' +
-      '<div class="emoji-grid">' +
-      Array.from({ length: EMOJI_COUNT }, (_, i) =>
-        `<button class="emoji-cell" type="button" data-emoji="${i}"><img loading="lazy" src="./resources/emoji/${i}.png"></button>`
-      ).join('') + '</div>';
-    area.appendChild(emojiPanel);
-
-    const closeAll = () => { tilePanel.classList.remove('open'); emojiPanel.classList.remove('open'); };
-    menuBtn.addEventListener('click', (e) => { e.stopPropagation(); closeAll(); tilePanel.classList.toggle('open'); });
-    document.addEventListener('click', () => closeAll());
-    [tilePanel, emojiPanel].forEach((p) => p.addEventListener('click', (e) => e.stopPropagation()));
-
-    tilePanel.querySelector('[data-t="emoji"]').onclick = () => { tilePanel.classList.remove('open'); emojiPanel.classList.add('open'); };
-    tilePanel.querySelector('[data-t="image"]').onclick = () => { closeAll(); const fi = document.getElementById('mmt-img-file'); if (fi) fi.click(); };
-    tilePanel.querySelector('[data-t="shot"]').onclick = () => { closeAll(); takeScreenshot(); };
-    tilePanel.querySelector('[data-t="clear"]').onclick = () => { closeAll(); const t = document.getElementById('mmt-clear-chat'); if (t) t.click(); };
-    emojiPanel.querySelector('.emoji-back').onclick = () => { emojiPanel.classList.remove('open'); tilePanel.classList.add('open'); };
-    emojiPanel.addEventListener('click', (e) => {
-      const cell = e.target.closest('.emoji-cell');
-      if (!cell) return;
-      const n = Number(cell.dataset.emoji);
-      if (!Number.isFinite(n) || n < 0 || n >= EMOJI_COUNT) return;
-      const input = document.getElementById('chat-input');
-      input.value = absUrl('./resources/emoji/' + n + '.png');
-      closeAll();
-      window.sendMessage();
-    });
-  }
-
-  function buildBoxes() {
-    const st = state();
-    if (!st || !st.history.length) return [];
-    const boxes = [];
-    let cur = null;
-    st.history.forEach((m) => {
-      const role = m.role === 'sensei' ? 'sensei' : 'student';
-      if (!cur || cur.role !== role) { cur = { role: role, items: [] }; boxes.push(cur); }
-      const t = String(m.text || '');
-      if (/^(https?:\/\/\S+\.(png|jpe?g|gif|webp)(\?\S*)?|data:image\/)/i.test(t)) cur.items.push({ type: 'image', src: t });
-      else cur.items.push({ type: 'text', text: t });
-    });
-    return boxes;
-  }
-
-  function takeScreenshot() {
-    const st = state();
-    if (!st || !st.id) return;
-    const boxes = buildBoxes();
-    if (!boxes.length) {
-      window.showModal('聊天截图', '<div style="text-align:center;color:#888;font-size:14px;">还没有聊天内容可以截图</div>', []);
-      return;
-    }
-    if (!window.ChatScreenshot || typeof window.ChatScreenshot.generate !== 'function') {
-      ensureScreenshotModule();
-      setTimeout(takeScreenshot, 400);
-      return;
-    }
-    const avatarEl = document.getElementById('chat-header-avatar');
-    const avatar = (avatarEl && avatarEl.src && avatarEl.src.startsWith('http')) ? avatarEl.src : '';
-    window.showModal('聊天截图',
-      '<div style="text-align:center;padding:20px 0;color:#888;">正在生成截图…</div>', []);
-    window.ChatScreenshot.generate({
-      boxes: boxes,
-      student: { name: st.nameCn || st.name || '', avatar: avatar },
-      width: Math.max(300, Math.min(460, window.innerWidth - 40)),
-      dpr: 2,
-      imageProxy: 'https://wsrv.nl/?url={url}',
-      texts: { reply: '回复', story: '好感故事', imageFail: '图片加载失败' },
-    }).then((res) => {
-      const dataUrl = res.canvas.toDataURL('image/png');
-      const body = '<img class="mmt-shot-preview" src="' + dataUrl + '">';
-      window.showModal('聊天截图', body, [
-        { text: '关闭', class: 'cancel', onClick: () => window.closeModal() },
-        { text: '保存 PNG', class: 'danger', onClick: () => {
-          const a = document.createElement('a');
-          a.href = dataUrl;
-          a.download = 'MomoTalk-截图-' + Date.now() + '.png';
-          document.body.appendChild(a); a.click(); a.remove();
-          window.closeModal();
-        } },
-      ]);
-    }).catch((e) => {
-      window.showModal('聊天截图', '<div style="color:#c0392b;font-size:13px;text-align:center;">截图失败:' +
-        String(e && e.message || e).slice(0, 80) + '</div>', []);
-    });
-  }
-
-  function buildScreenshotUI() {
-    const header = document.querySelector('.chat-header');
-    if (!header || document.getElementById('mmt-screenshot-btn')) return;
-    const trash = document.getElementById('mmt-clear-chat');
-    const btn = document.createElement('button');
-    btn.id = 'mmt-screenshot-btn';
-    btn.title = '聊天截图(长图)';
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 2L7.17 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3.17L15 2H9zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>';
-    btn.addEventListener('click', takeScreenshot);
-    if (trash) header.insertBefore(btn, trash);
-    else header.appendChild(btn);
-  }
 
   // ── 新电脑部署指南:软件内预览浮层(不依赖第三方查看器) ──
   function showDeployGuide() {
@@ -288,6 +117,7 @@
           <div class="dg-h">日常使用</div>
           <div class="dg-p">聊天:发消息 AI 自动回复;点学生头像重新生成;发图 AI 会先看图再回复。</div>
           <div class="dg-p">语音:点消息旁的小喇叭,学生的克隆音色读出来;语音设置里可切 RVC 变声引擎。</div>
+          <div class="dg-p">创作:聊天页顶部「播放」可把聊天记录做成动画回放;更多面板可发回复框、好感故事、旁白;开启体验模式可手动扮演师生双方。</div>
           <div class="dg-p">语言:简/繁/EN/日 四语切换,学生名字同步官方译名。</div>
           <div class="dg-p">备份:菜单 文件 → 备份数据(⌘⇧B),自选保存位置;换电脑导入备份即可。</div>
           <div class="dg-h">常见问题</div>
@@ -312,72 +142,47 @@
     ov.addEventListener('click', (e) => { if (e.target === ov) ov.style.display = 'none'; });
   }
 
-  // ── Demo 模式:预置演示对话回放(无需 AI) ──
-  let demoPlaying = false;
-  const DEMO_SCRIPT = [
-    { role: 'sensei', text: '星野，在吗？' },
-    { role: 'student', text: '哎——在呐。大叔我刚睡醒~' },
-    { role: 'sensei', demoImage: true },
-    { role: 'student', emoji: 3 },
-    { role: 'student', text: '周五的约会别忘了哦！老师说好的~' },
-    { role: 'sensei', text: '忘不了！布丁我带双份。' },
-    { role: 'student', text: '哎——布丁呐！那就说定了，拉钩~' },
-    { role: 'sensei', text: '拉钩。' },
-    { role: 'student', text: '嘿嘿，那周五见啦，老师~' },
-  ];
-
-  function demoImage() {
-    const c = document.createElement('canvas'); c.width = 320; c.height = 160;
-    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 320, 160);
-    x.fillStyle = '#1a6'; x.font = 'bold 52px sans-serif'; x.fillText('小菊公园', 40, 95);
-    return c.toDataURL('image/png');
-  }
-
-  async function startDemo() {
-    if (demoPlaying) return;
-    demoPlaying = true;
-    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-    try {
-      if (typeof switchToList === 'function') switchToList();
-      await wait(300);
-      if (!document.querySelector('.contact-item')) throw new Error('no student');
-      document.querySelector('.contact-item').click();
-      await wait(700);
+  // ── 上游瓷贴栏追加:清空聊天 + 部署指南(表情/图片/回复框/好感故事/旁白为上游原生) ──
+  const TILE_LABELS = {
+    'zh-CN': { clear: '清空聊天', guide: '部署指南' },
+    'zh-TW': { clear: '清空聊天', guide: '部署指南' },
+    en: { clear: 'Clear Chat', guide: 'Setup Guide' },
+    ja: { clear: '履歴消去', guide: 'セットアップ' },
+  };
+  const TL = TILE_LABELS[window.__MMT_LOCALE] || TILE_LABELS['zh-CN'];
+  function buildFeatureTiles() {
+    const tiles = document.getElementById('more-tiles');
+    if (!tiles || document.getElementById('mmt-tile-clear')) return;
+    const mk = (id, label, svg) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'more-tile';
+      b.id = id;
+      b.title = label;
+      b.innerHTML = `<span class="more-tile-icon">${svg}</span><span class="more-tile-label">${label}</span>`;
+      return b;
+    };
+    const clearBtn = mk('mmt-tile-clear', TL.clear,
+      '<svg viewBox="0 0 24 24" fill="none" stroke="#7a8aa0" stroke-width="1.7"><path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13"/></svg>');
+    clearBtn.addEventListener('click', () => {
+      const trig = document.getElementById('mmt-clear-chat');
+      if (trig) { trig.click(); return; }
       const st = state();
-      if (!st) throw new Error('no chat state');
-      const aiEnabled = window.mmtAi ? window.mmtAi.settings.enabled : false;
-      const autoRead = window.mmtVoice ? window.mmtVoice.settings.auto : false;
-      if (window.mmtAi) window.mmtAi.settings.enabled = false;
-      if (window.mmtVoice) window.mmtVoice.settings.auto = false;
-      toast('Demo 播放中…', true);
-      const say = (m) => {
-        if (m.role === 'sensei') {
-          const input = document.getElementById('chat-input');
-          input.value = m.demoImage ? demoImage() : m.text;
-          window.sendMessage();
-        } else if (m.emoji != null) {
-          st.pushStudent(absUrl('./resources/emoji/' + m.emoji + '.png'));
-        } else {
-          st.pushStudent(m.text);
-        }
-        if (typeof renderChat === 'function') renderChat();
-      };
-      for (const m of DEMO_SCRIPT) {
-        say(m);
-        await wait(m.role === 'sensei' ? 850 : 780);
+      if (st && st.id != null && window.showModal) {
+        window.showModal(TL.clear, '<div style="font-size:13px;color:#666;">' + TL.clear + '?', []);
+        st.clearChat();
+        window.closeModal();
       }
-      toast('Demo 播放完毕（可用垃圾桶清空）', true);
-      if (window.mmtAi) window.mmtAi.settings.enabled = aiEnabled;
-      if (window.mmtVoice) window.mmtVoice.settings.auto = autoRead;
-    } catch (e) {
-      toast('Demo 失败: ' + String(e && e.message || e).slice(0, 60), false);
-      if (window.mmtAi) window.mmtAi.settings.enabled = true;
-    } finally {
-      setTimeout(() => { demoPlaying = false; }, 1200);
-    }
+    });
+    const guideBtn = mk('mmt-tile-guide', TL.guide,
+      '<svg viewBox="0 0 24 24" fill="none" stroke="#7a8aa0" stroke-width="1.7"><path d="M12 6.5c-1.6-1.3-3.8-2-6-2v13c2.2 0 4.4.7 6 2 1.6-1.3 3.8-2 6-2v-13c-2.2 0-4.4.7-6 2z"/><path d="M12 6.5v13"/></svg>');
+    guideBtn.addEventListener('click', () => showDeployGuide());
+    tiles.appendChild(clearBtn);
+    tiles.appendChild(guideBtn);
   }
 
-  // ── Demo 模式(开关):内置演示会话,无需 AI ──
+  // ── 体验模式(开关):上游网页版编辑体验——手动扮演师生双方 + 回复框/旁白/播放 ──
+  // 示例学生未花:开启时若无则添加;关闭时保留学生与聊天(避免误删用户在体验中写的内容)
   const DEMO_LS = 'mmt_demo_mode_v1';
   const DEMO_STUDENT_CN = '圣园未花';
   async function setDemoMode(on) {
@@ -388,80 +193,87 @@
         if (window.mmtVoice) { window.mmtVoice._demoAutoPrev = window.mmtVoice.settings.auto; window.mmtVoice.settings.auto = false; }
         if (typeof switchToList === 'function') switchToList();
         await wait(200);
-        if (typeof switchToMore === 'function') switchToMore();
-        await wait(200);
-        if (typeof openStudentPicker === 'function') openStudentPicker();
-        await wait(500);
-        const target = [...document.querySelectorAll('.picker-item')].find((el) => {
-          const n = (el.querySelector('.picker-name') || {}).textContent || '';
-          return n.replace(/\s+/g, '') === DEMO_STUDENT_CN && !el.classList.contains('added');
-        });
-        if (!target) throw new Error('demo student not available');
-        target.click();
-        await wait(300);
-        [...document.querySelectorAll('.modal-actions .modal-btn, .modal-overlay button')].forEach((b) => { if (/完成|添加|确定/.test(b.textContent)) b.click(); });
-        await wait(400);
+        // 已有未花(用户自己加过)直接打开其聊天,不重建、不删用户数据(v8 displayName 带空格,匹配先去空格)
+        const existing = [...document.querySelectorAll('.contact-item')].find((it) => (it.textContent || '').replace(/\s+/g, '').includes(DEMO_STUDENT_CN));
+        if (!existing) {
+          if (typeof switchToMore === 'function') switchToMore();
+          await wait(200);
+          if (typeof openStudentPicker === 'function') openStudentPicker();
+          await wait(500);
+          const target = [...document.querySelectorAll('.picker-item')].find((el) => {
+            const n = (el.querySelector('.picker-name') || {}).textContent || '';
+            return n.replace(/\s+/g, '') === DEMO_STUDENT_CN && !el.classList.contains('added');
+          });
+          if (!target) throw new Error('demo student not available');
+          target.click();
+          await wait(300);
+          [...document.querySelectorAll('.modal-actions .modal-btn, .modal-overlay button')].forEach((b) => { if (/完成|添加|确定/.test(b.textContent)) b.click(); });
+          await wait(400);
+        }
         if (typeof switchToList === 'function') switchToList();
         await wait(200);
-        const items = document.querySelectorAll('.contact-item');
-        for (const it of items) { if ((it.textContent || '').includes(DEMO_STUDENT_CN)) { it.click(); break; } }
-        await wait(600);
-        const st = window.__mmtChatState && window.__mmtChatState();
-        if (!st) throw new Error('no chat');
-        if (st.history.length === 0) {
-          const seed = [
-            { role: 'sensei', text: '未花，今天也超级可爱呢。' },
-            { role: 'student', text: '诶嘿嘿☆ 那是当然的！不愧是未花大人！' },
-            { role: 'sensei', text: '周末有什么打算吗？' },
-            { role: 'student', text: '锵锵～☆ 和老师一起去逛街！已经决定了！' },
-            { role: 'sensei', text: '好呀，那就这么说定了。' },
-            { role: 'student', text: '诶嘿嘿☆ 拉钩！下面的输入框可以直接打字体验哦，老师～' },
-          ];
-          seed.forEach((m) => { if (m.role === 'student') st.pushStudent(m.text); else { const i = document.getElementById('chat-input'); i.value = m.text; window.sendMessage(); } });
+        // 打开未花聊天:点击后必须等到 currentStudentId 生效(否则种子会写进 chats[null])
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const items = document.querySelectorAll('.contact-item');
+          for (const it of items) { if ((it.textContent || '').replace(/\s+/g, '').includes(DEMO_STUDENT_CN)) { it.click(); break; } }
+          await wait(600);
+          const s1 = window.__mmtChatState && window.__mmtChatState();
+          if (s1 && s1.id != null) break;
         }
-        toast('Demo 模式已开启（此会话为演示，不含 AI）', true);
+        const st = window.__mmtChatState && window.__mmtChatState();
+        if (!st || st.id == null) throw new Error('no chat');
+        if (st.count === 0) {
+          // 示例对话:静态种子(含回复框示例),无 AI、无自动回放
+          const uid = (p) => p + '_' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
+          const t0 = Date.now();
+          const mkItem = (o) => Object.assign({ id: uid('i') }, o);
+          const mkBox = (role, items, dt) => ({ id: uid('b'), role, time: t0 + dt, items });
+          const seed = [
+            mkBox('sensei', [mkItem({ type: 'text', text: '未花，今天也超级可爱呢。' })], 0),
+            mkBox('student', [mkItem({ type: 'text', text: '诶嘿嘿☆ 那是当然的！不愧是未花大人！' })], 800),
+            mkBox('sensei', [mkItem({ type: 'reply', title: '回复', options: ['周末一起去逛街吧。', '下次再说吧。'] })], 1600),
+            mkBox('student', [mkItem({ type: 'text', text: '锵锵～☆ 已经决定和老师逛街了！输入框直接打字，或点上方「播放」看动画哦～' })], 2400),
+          ];
+          chats[st.id] = seed;
+          saveChats();
+          if (typeof renderChat === 'function') renderChat();
+        }
+        // 显示身份切换徽章(体验模式核心:手动扮演双方)
+        const rs = document.getElementById('role-switch');
+        if (rs) rs.style.removeProperty('display');
+        toast('体验模式已开启：可手动扮演师生双方、发回复框/旁白、播放动画（无 AI）', true);
       } else {
         if (typeof switchToList === 'function') switchToList();
         await wait(200);
-        try {
-          for (const s of [...myStudents]) {
-            const n = String(((libraryById[s.id] || {}).displayName || '')).replace(/\s+/g, '');
-            if (n === DEMO_STUDENT_CN) { delete chats[s.id]; myStudents = myStudents.filter((x) => x.id !== s.id); }
-          }
-          saveMyStudents(); saveChats(); renderContactList();
-        } catch {}
         if (window.mmtAi) window.mmtAi.settings.enabled = window.mmtAi._demoAiPrev !== undefined ? window.mmtAi._demoAiPrev : true;
         if (window.mmtVoice) window.mmtVoice.settings.auto = window.mmtVoice._demoAutoPrev !== undefined ? window.mmtVoice._demoAutoPrev : false;
-        toast('已退出 Demo 模式', true);
+        const rs = document.getElementById('role-switch');
+        if (rs) rs.style.setProperty('display', 'none');
+        toast('已退出体验模式（示例学生与聊天记录已保留，可长按联系人删除）', true);
       }
       try { localStorage.setItem(DEMO_LS, on ? '1' : '0'); } catch {}
     } catch (e) {
-      toast('Demo 切换失败: ' + String(e && e.message || e).slice(0, 60), false);
+      toast('体验模式切换失败: ' + String(e && e.message || e).slice(0, 60), false);
       try { localStorage.setItem(DEMO_LS, '0'); } catch {}
     }
   }
-  function cnNameOfInFeatures() {
-    try {
-      const sid = window.__mmtChatState ? (window.__mmtChatState().id) : null;
-      const s = sid != null ? (window.libraryById || {})[sid] : null;
-      const f = (s && s.familyName && (s.familyName.cn || s.familyName.nm)) || '';
-      const g = (s && s.givenName && (s.givenName.cn || s.givenName.nm)) || '';
-      return (f + g).trim();
-    } catch { return ''; }
-  }
-  window.mmtFeatures = { startDemo: () => startDemo(), showDeployGuide: () => showDeployGuide(), setDemoMode: (on) => setDemoMode(on), isDemoOn: () => { try { return localStorage.getItem(DEMO_LS) === '1'; } catch { return false; } } };
+  window.mmtFeatures = { showDeployGuide: () => showDeployGuide(), setDemoMode: (on) => setDemoMode(on), isDemoOn: () => { try { return localStorage.getItem(DEMO_LS) === '1'; } catch { return false; } } };
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureScreenshotModule);
-  else ensureScreenshotModule();
-  let tries = 0;
-  const timer = setInterval(() => {
-    const area = document.querySelector('.chat-input-area');
-    const header = document.querySelector('.chat-header');
-    if (area && header) {
-      ensureScreenshotModule();
-      buildTileBar();
-      buildScreenshotUI();
-      clearInterval(timer);
-    } else if (++tries > 40) clearInterval(timer);
-  }, 500);
+  // 启动时:体验模式若处于开启状态(上次会话),恢复身份徽章显示;并追加瓷贴
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap);
+  else bootstrap();
+  function bootstrap() {
+    try {
+      if ((localStorage.getItem(DEMO_LS) === '1')) {
+        const rs = document.getElementById('role-switch');
+        if (rs) rs.style.removeProperty('display');
+      }
+    } catch {}
+    let tries = 0;
+    const timer = setInterval(() => {
+      const tiles = document.getElementById('more-tiles');
+      if (tiles) { buildFeatureTiles(); clearInterval(timer); }
+      else if (++tries > 40) clearInterval(timer);
+    }, 500);
+  }
 })();

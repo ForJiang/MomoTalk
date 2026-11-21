@@ -507,34 +507,36 @@
   const seen = new WeakSet();
 
   function decorate() {
-    const rows = [...document.querySelectorAll('.msg-row')];
-    const unseen = rows.filter((r) => !seen.has(r));
+    const boxes = [...document.querySelectorAll('.msg-box')];
+    const unseen = boxes.filter((r) => !seen.has(r));
     const bulk = unseen.length > 1; // 整段重渲染视为历史消息，不自动读
-    rows.forEach((row) => {
-      const wrap = row.querySelector('.msg-bubble-wrapper');
-      if (!wrap) return;
-      const bubble = wrap.querySelector('.msg-bubble');
-      const text = bubble ? bubble.textContent : '';
-      const name = row.querySelector('.msg-name') ? row.querySelector('.msg-name').textContent : '';
-      const fresh = !seen.has(row);
-      seen.add(row);
+    boxes.forEach((box) => {
+      const fresh = !seen.has(box);
+      seen.add(box);
+      const name = box.querySelector('.box-name') ? box.querySelector('.box-name').textContent : '';
+      // 每个 text 气泡单独挂朗读按钮(v8:一个 box 可含多个 item)
+      box.querySelectorAll('.msg-item > .msg-bubble').forEach((bubble) => {
+        const item = bubble.parentElement;
+        const text = bubble.textContent;
+        if (text && text.trim() && !item.querySelector('.mmt-say')) {
+          const btn = document.createElement('button');
+          btn.className = 'mmt-say';
+          btn.innerHTML = '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" style="display:block"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>';
+          btn.title = v('readTip', '朗读这条消息');
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            speak(text, name, bubble);
+          });
+          item.appendChild(btn);
+        }
+      });
 
-      if (text && text.trim() && !wrap.querySelector('.mmt-say')) {
-        const btn = document.createElement('button');
-        btn.className = 'mmt-say';
-        btn.innerHTML = '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" style="display:block"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>';
-        btn.title = v('readTip', '朗读这条消息');
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          speak(text, name, bubble);
-        });
-        const nameEl = wrap.querySelector('.msg-name');
-        if (nameEl) nameEl.appendChild(btn);
-      }
-
-      // 自动朗读：仅单条新增的学生消息
-      if (fresh && !bulk && S.auto && !row.classList.contains('sensei') && text && text.trim()) {
-        speak(text, name, bubble);
+      // 自动朗读：仅单条新增学生 box 的最后一个文本气泡
+      if (fresh && !bulk && S.auto && !box.classList.contains('sensei')) {
+        const bubbles = [...box.querySelectorAll('.msg-item > .msg-bubble')];
+        const bubble = bubbles[bubbles.length - 1];
+        const text = bubble ? bubble.textContent : '';
+        if (text && text.trim()) speak(text, name, bubble);
       }
     });
   }

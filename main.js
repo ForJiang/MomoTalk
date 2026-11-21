@@ -159,10 +159,7 @@ const FRAME_CSS = `
   .header, .chat-header, .more-header { -webkit-app-region: drag; }
   .header a, .header button, .chat-header .back-btn,
   .more-header .back-btn, #more-back-btn,
-  #chat-header-avatar { -webkit-app-region: no-drag; }
-  .header, .chat-header, .more-header { -webkit-app-region: drag; }
-  .header a, .header button, .chat-header .back-btn,
-  .more-header .back-btn, #more-back-btn,
+  #btn-play, #btn-screenshot, #btn-playback-stop,
   #chat-header-avatar { -webkit-app-region: no-drag; }
 ` + (IS_WIN ? `
   .header, .chat-header, .more-header { padding-right: 140px !important; padding-left: 12px !important; }
@@ -200,7 +197,7 @@ function startStaticServer() {
           return;
         }
         if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
-          filePath = path.join(filePath, 'momotalk.html');
+          filePath = path.join(filePath, 'index.html');
         }
         if (urlPath === '/docs/deploy-guide.pdf') {
         const pd = path.join(process.resourcesPath || path.join(__dirname, 'build', 'docs'), 'docs', 'MomoTalk-部署指南.pdf');
@@ -220,7 +217,7 @@ function startStaticServer() {
           });
           return;
         }
-        if (filePath.endsWith('momotalk.html') && fs.existsSync(filePath)) {
+        if (filePath.endsWith('index.html') && fs.existsSync(filePath)) {
           // 注入当前语言：页面脚本执行前生效
           const html = fs.readFileSync(filePath, 'utf8').replace(
             '<meta charset="UTF-8">',
@@ -755,7 +752,7 @@ app.whenReady().then(async () => {
     if (fs.existsSync(iconPng)) app.dock.setIcon(iconPng);
   }
   const port = await startStaticServer();
-  const win = createWindow(`http://127.0.0.1:${port}${BASE}/momotalk.html`);
+  const win = createWindow(`http://127.0.0.1:${port}${BASE}/index.html`);
   buildMenu(win);
   startUnreadBadge(win);
 

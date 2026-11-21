@@ -251,13 +251,15 @@
     if (!container) return;
     const av = document.getElementById('chat-header-avatar');
     const row = document.createElement('div');
-    row.className = 'msg-row student mmt-typing-row';
+    row.className = 'msg-box student mmt-typing-row';
     row.innerHTML = `
-      <img class="msg-avatar" src="${av && av.src ? av.src : ''}" alt="">
-      <div class="msg-bubble-wrapper">
-        <div class="msg-bubble mmt-typing" title="${a('typing', '正在输入…')}">
-          <span class="mmt-dot"></span><span class="mmt-dot"></span><span class="mmt-dot"></span>
-        </div>
+      <img class="box-avatar" src="${av && av.src ? av.src : ''}" alt="">
+      <div class="box-body">
+        <div class="box-items"><div class="msg-item">
+          <div class="msg-bubble mmt-typing" title="${a('typing', '正在输入…')}">
+            <span class="mmt-dot"></span><span class="mmt-dot"></span><span class="mmt-dot"></span>
+          </div>
+        </div></div>
       </div>`;
     container.appendChild(row);
     container.scrollTop = container.scrollHeight;
@@ -418,8 +420,8 @@
       #more-general.active{animation:mmtFade .18s ease;}
       #chat-header-avatar{cursor:pointer;transition:transform .15s;}
       #chat-header-avatar:hover{transform:scale(1.06);}
-      .msg-row.student .msg-avatar{cursor:pointer;transition:transform .15s;}
-      .msg-row.student .msg-avatar:hover{transform:scale(1.08);}
+      .msg-box.student .box-avatar{cursor:pointer;transition:transform .15s;}
+      .msg-box.student .box-avatar:hover{transform:scale(1.08);}
       #more-general .about-card{padding:16px 16px 14px;margin-bottom:12px;}
       #more-ai .about-section-title{margin-bottom:6px;}
       #more-general .arow{display:block;margin:12px 0 4px;color:#5a5060;font-size:11.5px;font-weight:500;}
@@ -676,8 +678,8 @@
       const t = e.target;
       if (!(t instanceof HTMLElement)) return;
       if (t.id === 'chat-header-avatar') { generate(); return; }
-      if (t.classList.contains('msg-avatar')) {
-        const row = t.closest('.msg-row');
+      if (t.classList.contains('box-avatar')) {
+        const row = t.closest('.msg-box');
         if (row && row.classList.contains('student') && !row.classList.contains('mmt-typing-row')) generate();
       }
     });

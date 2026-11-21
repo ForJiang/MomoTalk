@@ -111,7 +111,7 @@ function startStaticServer() {
         const p = path.join(__dirname, 'build', 'forjiang-avatar.jpg');
         if (fs.existsSync(p)) { res.writeHead(200, { 'Content-Type': 'image/jpeg' }); fs.createReadStream(p).pipe(res); return; }
       }
-      if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) filePath = path.join(filePath, 'momotalk.html');
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) filePath = path.join(filePath, 'index.html');
       fs.readFile(filePath, (err, data) => {
         if (err) { res.writeHead(404); res.end(); return; }
         res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream' });
@@ -233,7 +233,7 @@ app.whenReady().then(async () => {
           let sayBtns = 0;
           for (let i = 0; i < 60; i++) {
             await wait(500);
-            const rows = [...document.querySelectorAll('.msg-row.student .msg-bubble')];
+            const rows = [...document.querySelectorAll('.msg-box.student .msg-bubble')];
             const hit = rows.find((b) => b.textContent.includes('MOCK:PERSONA-MARKER') || b.textContent.includes('给你看张有趣的图'));
             if (hit && aiReply === null) aiReply = hit.textContent.trim();
             sayBtns = document.querySelectorAll('.mmt-say').length;
@@ -300,14 +300,14 @@ app.whenReady().then(async () => {
         switchToList(); await wait(300);
         const it = document.querySelector('.contact-item'); if (!it) return { ok: false, why: 'no contact' };
         it.click(); await wait(500);
-        const n0 = document.querySelectorAll('.msg-row').length;
+        const n0 = document.querySelectorAll('.msg-box').length;
         const i = document.getElementById('chat-input'); i.value = '发张图给我看看';
         window.sendMessage();
         let img = null, txt = null;
         for (let k = 0; k < 30; k++) {
           await wait(500);
           img = document.querySelector('.msg-image[src="' + url + '"]');
-          const bubbles = [...document.querySelectorAll('.msg-row.student .msg-bubble')].filter(b => !b.classList.contains('mmt-typing'));
+          const bubbles = [...document.querySelectorAll('.msg-box.student .msg-bubble')].filter(b => !b.classList.contains('mmt-typing'));
           txt = bubbles.some(b => b.textContent.includes('给你看张有趣的图'));
           if (img && txt) break;
         }
@@ -325,13 +325,18 @@ app.whenReady().then(async () => {
         switchToList(); await wait(300);
         const it = document.querySelector('.contact-item'); if (!it) return { ok: false, why: 'no contact' };
         it.click(); await wait(600);
-        const n0 = document.querySelectorAll('.msg-row.student').length;
+        // v8:AI 回复可能与最后一个学生 box 合并(box 数不变),用扁平消息数判定
+        const st0 = window.__mmtChatState(); const n0 = st0 ? st0.count : 0;
         document.getElementById('chat-header-avatar').click();
         let replied = null;
         for (let i = 0; i < 30; i++) {
           await wait(500);
-          const rows = [...document.querySelectorAll('.msg-row.student')].filter(r => !r.classList.contains('mmt-typing-row'));
-          if (rows.length > n0) { replied = rows[rows.length-1].textContent.trim().slice(0, 40); break; }
+          const st1 = window.__mmtChatState();
+          if (st1 && st1.count > n0) {
+            const hist = st1.history;
+            replied = (hist[hist.length-1] || {}).text ? hist[hist.length-1].text.trim().slice(0, 40) : 'added';
+            break;
+          }
         }
         return { ok: !!replied, reply: replied };
       })()`);
@@ -351,7 +356,7 @@ app.whenReady().then(async () => {
       else fail(JSON.stringify({ voiceBtn, add: r1, chat: r2, more: r3, voicePanel: r4, aiPanel: aiOpen, safe: r5, vm, avatarGen, imgReply }));
     } catch (err) { clearTimeout(timer); fail(String(err)); }
   });
-  win.loadURL(`http://127.0.0.1:${port}/momotalk.html`);
+  win.loadURL(`http://127.0.0.1:${port}/index.html`);
 });
 
 app.on('window-all-closed', () => app.exit(0));

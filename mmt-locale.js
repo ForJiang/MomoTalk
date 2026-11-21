@@ -189,10 +189,10 @@
 
   // ── 「其它选项」分组：语言切换 / 窗口置顶 / 备份 / 清空本地数据 ──
   const OPT_LABELS = {
-    'zh-CN': { group: '其它选项', lang: '语言', aot: '窗口置顶', backup: '备份全部数据（选择位置）', clear: '清空本地数据', guide: '新电脑部署指南', demo: 'Demo 模式（演示会话）' },
-    'zh-TW': { group: '其它選項', lang: '語言', aot: '視窗置頂', backup: '備份全部資料（選擇位置）', clear: '清空本機資料', guide: '新電腦部署指南', demo: 'Demo 模式（演示會話）' },
-    en: { group: 'Other Options', lang: 'Language', aot: 'Always on Top', backup: 'Back Up All Data (Choose Location)', clear: 'Clear Local Data', guide: 'Deployment Guide', demo: 'Demo Mode (Sample Chat)' },
-    ja: { group: 'その他の設定', lang: '言語', aot: '常に手前に表示', backup: '全データをバックアップ（保存先を選択）', clear: 'ローカルデータを消去', guide: '新PCセットアップガイド', demo: 'デモモード（会話再生）' },
+    'zh-CN': { group: '其它选项', lang: '语言', aot: '窗口置顶', backup: '备份全部数据（选择位置）', clear: '清空本地数据', guide: '新电脑部署指南', demo: '体验模式（网页版编辑/播放）' },
+    'zh-TW': { group: '其它選項', lang: '語言', aot: '視窗置頂', backup: '備份全部資料（選擇位置）', clear: '清空本機資料', guide: '新電腦部署指南', demo: '體驗模式（網頁版編輯/播放）' },
+    en: { group: 'Other Options', lang: 'Language', aot: 'Always on Top', backup: 'Back Up All Data (Choose Location)', clear: 'Clear Local Data', guide: 'Deployment Guide', demo: 'Experience Mode (Editor & Playback)' },
+    ja: { group: 'その他の設定', lang: '言語', aot: '常に手前に表示', backup: '全データをバックアップ（保存先を選択）', clear: 'ローカルデータを消去', guide: '新PCセットアップガイド', demo: '体験モード（編集・再生）' },
   };
   const OL = OPT_LABELS[window.__MMT_LOCALE] || OPT_LABELS['zh-CN'];
   function buildMoreOptions() {
@@ -224,7 +224,7 @@
       </div>
       <div class="more-list-item" id="opt-demo-item" style="cursor:pointer;">
         <span class="mmt-ico mmt-ico-box"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
-        <span id="opt-demo-label">Demo 模式（演示对话）</span>
+        <span id="opt-demo-label"></span>
         <input type="checkbox" id="opt-demo-toggle" style="width:44px;height:26px;">
       </div>
       <div class="more-list-item" id="opt-backup-item" style="cursor:pointer;">
@@ -270,7 +270,11 @@
     }
     list.querySelector('#opt-backup-item').addEventListener('click', () => window.mmtShell.backupAll());
     const demoItem = list.querySelector('#opt-demo-item');
-    if (demoItem) demoItem.addEventListener('click', () => window.mmtFeatures && window.mmtFeatures.startDemo && window.mmtFeatures.startDemo());
+    if (demoItem) demoItem.addEventListener('click', (e) => {
+      if (e.target === demoT) return; // 点开关本身不重复触发
+      demoT.checked = !demoT.checked;
+      demoT.dispatchEvent(new Event('change'));
+    });
     const guideItemEl = list.querySelector('#opt-guide-item');
     if (guideItemEl) guideItemEl.addEventListener('click', () => window.mmtFeatures && window.mmtFeatures.showDeployGuide && window.mmtFeatures.showDeployGuide());
     const dl = OL.demo; if (dl) { const el = document.getElementById('opt-demo-label'); if (el) el.textContent = dl; }
@@ -330,16 +334,17 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', removeVideoUi);
   else removeVideoUi();
 
-  // ── 移除聊天框旁的身份切换按钮（老师/学生），发信固定以老师身份 ──
-  function removeRoleSwitch() {
-    document.getElementById('role-switch')?.remove();
+  // ── 聊天框旁的身份切换按钮（老师/学生）：AI 模式默认隐藏，体验模式（mmt-features setDemoMode）显示 ──
+  function hideRoleSwitch() {
+    const el = document.getElementById('role-switch');
+    if (el) el.style.setProperty('display', 'none');
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', removeRoleSwitch);
-  else removeRoleSwitch();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hideRoleSwitch);
+  else hideRoleSwitch();
   let rsTries = 0;
   const rsTimer = setInterval(() => {
-    removeRoleSwitch();
-    if (!document.getElementById('role-switch') || ++rsTries > 20) clearInterval(rsTimer);
+    hideRoleSwitch();
+    if (document.getElementById('role-switch') || ++rsTries > 20) clearInterval(rsTimer);
   }, 500);
 
   // ── 聊天页：顶栏「清空聊天记录」按钮（确认弹窗复用页面 showModal）──
@@ -375,13 +380,11 @@
   let cTries = 0;
   const cTimer = setInterval(() => { buildClearChat(); if (document.getElementById('mmt-clear-chat') || ++cTries > 10) clearInterval(cTimer); }, 500);
 
-  // ── 聊天页：发送本地图片（按钮选择 / 粘贴 / 拖拽 → 存盘 → 图片消息）──
+  // ── 聊天页：粘贴 / 拖拽发送本地图片（存盘 /u/ → 图片消息；入口按钮由上游瓷贴「本地图片」提供）──
   function buildImageSend() {
-    if (document.getElementById('mmt-img-btn')) return;
-    const area = document.querySelector('.chat-input-area');
+    if (document.getElementById('mmt-img-bound')) return;
     const input = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('send-btn');
-    if (!area || !input || !sendBtn) return;
+    if (!input) return;
 
     const sendImage = async (file) => {
       if (!file || !file.type.startsWith('image/')) return;
@@ -405,20 +408,10 @@
       reader.readAsDataURL(file);
     };
 
-    const btn = document.createElement('button');
-    btn.id = 'mmt-img-btn';
-    btn.title = (window.__MMT_LOCALE === 'en') ? 'Send image' : '发送图片';
-    btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="display:block"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>';
-    btn.addEventListener('click', () => document.getElementById('mmt-img-file').click());
-    area.insertBefore(btn, input); // 图片按钮放输入框左侧
-
-    const fileInput = document.createElement('input');
-    fileInput.id = 'mmt-img-file';
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
-    fileInput.style.display = 'none';
-    fileInput.addEventListener('change', () => { sendImage(fileInput.files[0]); fileInput.value = ''; });
-    area.appendChild(fileInput);
+    const marker = document.createElement('div');
+    marker.id = 'mmt-img-bound';
+    marker.style.display = 'none';
+    document.body.appendChild(marker);
 
     input.addEventListener('paste', (e) => {
       const f = [...(e.clipboardData?.files || [])].find((x) => x.type.startsWith('image/'));
@@ -435,7 +428,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildImageSend);
   else buildImageSend();
   let iTries = 0;
-  const iTimer = setInterval(() => { buildImageSend(); if (document.getElementById('mmt-img-btn') || ++iTries > 10) clearInterval(iTimer); }, 500);
+  const iTimer = setInterval(() => { buildImageSend(); if (document.getElementById('mmt-img-bound') || ++iTries > 10) clearInterval(iTimer); }, 500);
 
   // ── 发送防连点：同一内容 400ms 内不重复入队 ──
   (function () {
@@ -458,6 +451,37 @@
     install();
     let gTries = 0;
     const gTimer = setInterval(() => { install(); if (window.sendMessage && window.sendMessage.__mmtGuard || ++gTries > 20) clearInterval(gTimer); }, 400);
+  })();
+
+  // ── 输入框发送图片链接 → 图片消息(上游 commitSendText 仅存文本项;桌面版保留"贴链接直显图片"行为)──
+  // 走原盒子流程构造 image item,AI 自动回复链(sendMessage → 钩子 → generate 看图)不受影响
+  (function () {
+    const install = () => {
+      if (typeof window.commitSendText !== 'function' || window.commitSendText.__mmtImg) return;
+      const orig = window.commitSendText;
+      window.commitSendText = function (text, append) {
+        try {
+          const t = String(text || '').trim();
+          if (t && typeof isImageUrl === 'function' && isImageUrl(t)
+              && typeof newItem === 'function' && typeof chatBoxes === 'function'
+              && typeof emptyBox === 'function'
+              && typeof currentStudentId !== 'undefined' && currentStudentId) {
+            const boxes = chatBoxes();
+            const box = emptyBox(currentRole);
+            box.items.push(newItem('image', { src: t }));
+            boxes.push(box);
+            saveChats();
+            renderChat();
+            return;
+          }
+        } catch {}
+        return orig.apply(this, arguments);
+      };
+      window.commitSendText.__mmtImg = true;
+    };
+    install();
+    let i2Tries = 0;
+    const i2Timer = setInterval(() => { install(); if (window.commitSendText && window.commitSendText.__mmtImg || ++i2Tries > 20) clearInterval(i2Timer); }, 400);
   })();
 
   // ── 教程：向「教程」分区注入图文使用指南（内容为桌面版实际功能）──
@@ -645,37 +669,62 @@
   }, 500);
 
   // ── 页面状态桥：供语音/AI 扩展读写会话（顶层 let 绑定仅同页脚本可见）──
+  // v8:chats 为 boxes[{id,role,time,items[]}]，items 为 {type:text/image/emoji/reply/story/narration1/2,...}
   window.__mmtChatState = function () {
     try {
       const sid = currentStudentId;
       const stu = sid != null ? libraryById[sid] : null;
-      const mapMsg = (m) => ({
-        role: m.role,
-        text: (typeof isImageUrl === 'function' && isImageUrl(String(m.text || ''))) ? '[图片]' : String(m.text || ''),
+      // 把一个 box 展开为扁平消息列表(text/image/emoji/reply/story/narration)
+      const flattenBox = (box) => (box.items || []).map((it) => {
+        let text = '';
+        if (it.type === 'image') text = '[图片]';
+        else if (it.type === 'emoji') text = '[表情]';
+        else if (it.type === 'reply') text = '[回复选项: ' + (it.options || []).join(' / ') + ']';
+        else if (it.type === 'story') text = '[好感故事]';
+        else text = String(it.text || '');
+        return {
+          role: box.role,
+          text: text,
+          rawUrl: it.type === 'image' ? String(it.src || '') : '',
+        };
       });
+      const flat = (arr) => (arr || []).reduce((out, b) => out.concat(flattenBox(b)), []);
       return {
         id: sid,
         name: stu ? stu.displayName : '',
         nameCn: stu ? cnNameOf(stu) : '',
         role: currentRole,
-        count: (chats[sid] || []).length,
-        older: (from, to) => (chats[sid] || []).slice(from, to).map(mapMsg),
-        history: (chats[sid] || []).slice(-40).map((m) => Object.assign(mapMsg(m), {
-          rawUrl: (typeof isImageUrl === 'function' && isImageUrl(String(m.text || ''))) ? String(m.text || '') : '',
-        })),
+        count: flat(chats[sid]).length,
+        older: (from, to) => flat(chats[sid]).slice(from, to),
+        history: flat(chats[sid]).slice(-40),
         pushStudent(text) {
           chats[sid] = chats[sid] || [];
-          chats[sid].push({ role: 'student', text: text, time: now() });
+          const isImg = (typeof isImageUrl === 'function') && isImageUrl(String(text || ''));
+          const item = isImg
+            ? { id: (typeof uid === 'function') ? uid('i') : 'i' + now(), type: 'image', src: String(text) }
+            : { id: (typeof uid === 'function') ? uid('i') : 'i' + now(), type: 'text', text: String(text) };
+          const boxes = chats[sid];
+          const last = boxes.length ? boxes[boxes.length - 1] : null;
+          if (last && last.role === 'student') {
+            last.items.push(item);
+            last.time = now();
+          } else {
+            boxes.push({ id: (typeof uid === 'function') ? uid('b') : 'b' + now(), role: 'student', time: now(), items: [item] });
+          }
           saveChats();
           renderChat();
         },
         normalizeImages(origin) {
           let changed = false;
           for (const k of Object.keys(chats)) {
-            for (const m of chats[k]) {
-              if (typeof m.text === 'string' && /^(u\/|\/u\/).+\.(png|jpe?g|gif|webp)$/i.test(m.text)) {
-                m.text = origin + '/' + m.text.replace(/^\//, '');
-                changed = true;
+            for (const b of chats[k]) {
+              for (const it of (b.items || [])) {
+                const v = String((it.type === 'image' ? it.src : it.text) || '');
+                if (/^(u\/|\/u\/).+\.(png|jpe?g|gif|webp)$/i.test(v)) {
+                  const fixed = origin + '/' + v.replace(/^\//, '');
+                  if (it.type === 'image') it.src = fixed; else { it.type = 'image'; it.src = fixed; delete it.text; }
+                  changed = true;
+                }
               }
             }
           }
