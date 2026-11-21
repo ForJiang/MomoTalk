@@ -203,6 +203,11 @@
       #btn-more svg{transition:transform .2s ease;}
       #btn-more.open svg{transform:rotate(180deg);}
       #btn-more{color:#6b7686;}
+      /* 聊天头右上按钮:去文字只留图标(图标+文字挤在 25px 高按钮里视觉重叠;播放状态由进度条提示) */
+      .chat-tool-btn span{display:none !important;}
+      .chat-tool-btn{width:38px;justify-content:center;padding:6px 0;gap:0;}
+      /* 截图按钮相机线框化(上游为白色实心剪影) */
+      #btn-screenshot svg path{fill:none !important;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round;}
     `;
     document.head.appendChild(arrowCss);
   }
