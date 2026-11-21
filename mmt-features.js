@@ -31,7 +31,7 @@
     #mmt-emoji-panel .emoji-cell{border:none;background:transparent;cursor:pointer;padding:2px;border-radius:8px;}
     #mmt-emoji-panel .emoji-cell:hover{background:#fdf0f3;}
     #mmt-emoji-panel .emoji-cell img{width:100%;display:block;}
-    #mmt-screenshot-btn{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:30px;height:30px;
+    #mmt-screenshot-btn{position:absolute;right:52px;top:50%;transform:translateY(-50%);width:30px;height:30px;
       border-radius:9px;border:none;background:rgba(255,255,255,.22);color:#fff;cursor:pointer;
       display:flex;align-items:center;justify-content:center;padding:0;}
     #mmt-screenshot-btn:hover{background:rgba(255,255,255,.34);}
@@ -173,7 +173,7 @@
     const btn = document.createElement('button');
     btn.id = 'mmt-screenshot-btn';
     btn.title = '聊天截图(长图)';
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14v4h-4v2h4v4h2v-4h4v-2h-4v-4h-2zM4 20h9v-2H4v2zM19 2v2h-2v-2h2zm2 0h4v2h-4V2zM19 6v2h-2V6h2zm2 0h4v2h-4V6zM19 10v2h-2v-2h2zm2 0h4v2h-4v-2z"/></svg>';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 2L7.17 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3.17L15 2H9zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>';
     btn.addEventListener('click', takeScreenshot);
     if (trash) header.insertBefore(btn, trash);
     else header.appendChild(btn);
