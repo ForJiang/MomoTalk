@@ -1,7 +1,7 @@
 {
   "name": "momotalk",
   "productName": "MomoTalk",
-  "version": "1.25.4",
+  "version": "1.26.0",
   "description": "蔚蓝档案 Momotalk（桃信）桌面版，基于开源 MomoTalk 网页项目封装，署名 ForJiang",
   "main": "main.js",
   "author": "ForJiang",
@@ -9,7 +9,9 @@
   "scripts": {
     "start": "electron .",
     "selftest": "bash -c 'pkill -f \"MomoTalk.app/Contents/MacOS/MomoTalk\" 2>/dev/null; sleep 1; electron . --self-test'",
-    "dist": "electron-builder --mac --arm64"
+    "dist": "electron-builder --mac --arm64",
+    "dist:mac": "electron-builder --mac --arm64",
+    "dist:win": "electron-builder --win nsis --x64"
   },
   "build": {
     "appId": "io.github.zakosensei.momotalk",
@@ -58,7 +60,23 @@
         "from": "build/docs",
         "to": "docs"
       }
-    ]
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon_1024.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
   },
   "devDependencies": {
     "electron": "^45.2.1",

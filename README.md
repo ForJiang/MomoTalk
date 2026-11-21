@@ -21,12 +21,15 @@ ForJiang · GPL-3.0
 
 ## 安装
 
-从 [Releases](https://github.com/ForJiang/MomoTalk/releases) 下载 `MomoTalk-*-arm64.dmg`(Apple Silicon),拖入 Applications 即可。
+| 平台 | 安装包 | 部署脚本 |
+|---|---|---|
+| macOS(Apple Silicon) | `MomoTalk-*-arm64.dmg` | `setup-momotalk.command` |
+| Windows 10/11 x64 | `MomoTalk-Setup-*.exe` | `setup-momotalk.bat` |
 
-首次使用前的服务部署(聊天/视觉模型与语音服务),见仓库内 **部署指南 PDF**(菜单 文件 → 新电脑部署指南),或使用 `dist/setup/` 下的一键脚本:
+从 [Releases](https://github.com/ForJiang/MomoTalk/releases) 下载对应安装包与部署脚本。部署指南见仓库内 **部署指南 PDF**(菜单 文件 → 新电脑部署指南,软件内可直接阅读),或使用 `dist/setup/` 下的一键脚本:
 
-- `setup-momotalk.command` — 新电脑一键部署(Ollama + 模型 + 语音服务)
-- `make-migration-pack.command` — 在旧电脑生成迁移包,离线搬运全部模型与配置
+- `setup-momotalk.command` / `.bat` — 新电脑一键部署(Ollama + 模型 + 语音服务)
+- `make-migration-pack.command` / `.bat` — 在旧电脑生成迁移包,离线搬运全部模型与配置
 
 ## 从源码构建
 

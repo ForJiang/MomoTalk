@@ -198,6 +198,8 @@
           <div class="dg-p">2. 把整个 setup 文件夹拷到新电脑(U 盘/移动硬盘)。</div>
           <div class="dg-p">3. 在新电脑:双击 setup-momotalk.command,自动完成服务部署与模型安装。</div>
           <div class="dg-p">4. 双击 MomoTalk 安装包,拖入 Applications,打开即用。</div>
+          <div class="dg-h">Windows 用户</div>
+          <div class="dg-p">使用 setup-momotalk.bat(部署)与 make-migration-pack.bat(迁移包),流程同上;语音服务写入注册表开机自启。Windows 版为首次适配版本,遇到问题欢迎反馈。</div>
           <div class="dg-h">方式 B:全新下载</div>
           <div class="dg-p">1. 双击 setup-momotalk.command:自动安装 Ollama(GitHub 加速)、从 ModelScope 下载聊天模型 qwen2.5:7b 与视觉模型 qwen2.5vl:3b、部署 voice-studio 并配置运行环境(首次约 10 分钟)。</div>
           <div class="dg-p">2. 自动安装语音服务开机自启,并做三项就绪校验(聊天/视觉/语音)。</div>

@@ -12,6 +12,9 @@ const fs = require('fs');
 const path = require('path');
 
 const WWW_ROOT = path.join(__dirname, 'www');
+const IS_MAC = process.platform === 'darwin';
+const IS_WIN = process.platform === 'win32';
+const VOICE_STUDIO_DIR = path.join(require('os').homedir(), '.zcode/workspace/default/voice-studio');
 const VOICE_SRC = (() => {
   try { return fs.readFileSync(path.join(__dirname, 'voice-extension.js'), 'utf8'); } catch { return ''; }
 })();
@@ -144,8 +147,15 @@ const FRAME_CSS = `
   .header a, .header button, .chat-header .back-btn,
   .more-header .back-btn, #more-back-btn,
   #chat-header-avatar { -webkit-app-region: no-drag; }
+  .header, .chat-header, .more-header { -webkit-app-region: drag; }
+  .header a, .header button, .chat-header .back-btn,
+  .more-header .back-btn, #more-back-btn,
+  #chat-header-avatar { -webkit-app-region: no-drag; }
+` + (IS_WIN ? `
+  .header, .chat-header, .more-header { padding-right: 140px !important; padding-left: 12px !important; }
+` : `
   .header, .chat-header, .more-header { padding-left: 80px !important; }
-`;
+`);
 
 function startStaticServer() {
   return new Promise((resolve, reject) => {
@@ -272,7 +282,8 @@ function createWindow(url) {
     minHeight: 600,
     title: 'MomoTalk',
     backgroundColor: '#fdf3f5',
-    titleBarStyle: 'hiddenInset',
+    titleBarStyle: IS_MAC ? 'hiddenInset' : 'hidden',
+    ...(IS_WIN ? { titleBarOverlay: { color: '#e56d84', symbolColor: '#ffffff', height: 36 } } : {}),
     // 页面触发的下载（导出学生数据等）弹系统保存框，让用户选位置
     webPreferences: {
       contextIsolation: true,
@@ -651,6 +662,15 @@ ipcMain.handle('mmt-tts:base', async (_e, { text, rate }) => {
     const aiff = path.join(tmp, 'mmt_tts_' + Date.now() + '.aiff');
     const wav = aiff.replace(/\.aiff$/, '.wav');
     const wpm = Math.round(180 * (Number(rate) || 1));
+    if (process.platform === 'win32') {
+      // Windows: PowerShell System.Speech 合成 16kHz 单声道 WAV
+      const ps = `$S=New-Object System.Speech.Synthesis.SpeechSynthesizer;` +
+        `$S.SetOutputToWaveFile('${wav}',@(16000,16,1));` +
+        `$S.Rate=${Math.max(-3, Math.min(3, Math.round((wpm - 180) / 60)))};` +
+        `$S.Speak('${String(text || '').replace(/'/g, "''").slice(0, 500)}');$S.Dispose();`;
+      await run('powershell.exe', ['-NoProfile', '-Command', ps]);
+      return { b64: fs.readFileSync(wav).toString('base64'), mime: 'audio/wav' };
+    }
     await run('say', ['-o', aiff, '-r', String(wpm), String(text || '').slice(0, 500)]);
     await run('afconvert', ['-f', 'WAVE', '-d', 'LEI16@44100', '-c', '1', aiff, wav]);
     const b64 = fs.readFileSync(wav).toString('base64');
@@ -810,7 +830,6 @@ app.whenReady().then(async () => {
 });
 
 // 语音服务兜底：仅在服务未运行且无实例时拉起（LaunchAgent 卸载/未登录时保证语音可用，pgrep 防竞态）
-const VOICE_STUDIO_DIR = path.join(require('os').homedir(), '.zcode/workspace/default/voice-studio');
 setTimeout(() => {
   try {
     const probe = net.fetch('http://127.0.0.1:8000/api/v1/health', { signal: AbortSignal.timeout(2500) });
@@ -820,7 +839,8 @@ setTimeout(() => {
     require('child_process').exec('pgrep -f services.main', (err, stdout) => {
       if (!err && String(stdout).trim()) return; // 已有实例（可能在加载中）
       try {
-        const py = path.join(VOICE_STUDIO_DIR, '.venv/bin/python');
+        const py = IS_WIN ? path.join(VOICE_STUDIO_DIR, '.venv', 'Scripts', 'python.exe')
+                          : path.join(VOICE_STUDIO_DIR, '.venv', 'bin', 'python');
         if (fs.existsSync(py)) {
           require('child_process').spawn(py, ['-m', 'services.main'], {
             cwd: path.join(VOICE_STUDIO_DIR, 'src'), detached: true, stdio: 'ignore',
