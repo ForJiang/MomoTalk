@@ -266,10 +266,12 @@
     list.querySelector('#opt-backup-item').addEventListener('click', () => window.mmtShell.backupAll());
     const demoItem = list.querySelector('#opt-demo-item');
     if (demoItem) demoItem.addEventListener('click', () => window.mmtFeatures && window.mmtFeatures.startDemo && window.mmtFeatures.startDemo());
+    const guideItemEl = list.querySelector('#opt-guide-item');
+    if (guideItemEl) guideItemEl.addEventListener('click', () => window.mmtFeatures && window.mmtFeatures.showDeployGuide && window.mmtFeatures.showDeployGuide());
     const dl = OL.demo; if (dl) { const el = document.getElementById('opt-demo-label'); if (el) el.textContent = dl; }
     const guideItem = list.querySelector('#opt-guide-item');
     if (guideItem) guideItem.addEventListener('click', () => window.mmtShell.openDeployGuide && window.mmtShell.openDeployGuide());
-    const gl = OL.guide; if (gl) { const el = document.getElementById('opt-guide-label'); if (el) el.textContent = gl; }
+
     list.querySelector('#opt-clear-item').addEventListener('click', () => window.mmtShell.clearAll());
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildMoreOptions);

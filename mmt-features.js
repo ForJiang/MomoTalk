@@ -38,6 +38,28 @@
     #mmt-screenshot-btn svg{width:16px;height:16px;display:block;}
     .mmt-shot-preview{max-width:100%;max-height:52vh;display:block;margin:0 auto;border-radius:10px;
       border:1px solid #eee0e5;}
+    #mmt-deploy-overlay{position:fixed;inset:0;background:rgba(43,34,48,.55);z-index:9000;
+      display:flex;align-items:center;justify-content:center;padding:18px;}
+    #mmt-deploy-overlay .dg-win{background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:100%;
+      display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(40,20,30,.3);}
+    #mmt-deploy-overlay .dg-head{display:flex;align-items:center;justify-content:space-between;
+      padding:12px 16px;background:#e56d84;color:#fff;font-weight:600;font-size:15px;}
+    #mmt-deploy-overlay .dg-close{border:none;background:rgba(255,255,255,.25);color:#fff;width:26px;height:26px;
+      border-radius:8px;cursor:pointer;font-size:13px;}
+    #mmt-deploy-overlay .dg-body{flex:1;overflow-y:auto;padding:14px 16px;background:#fff;}
+    #mmt-deploy-overlay .dg-h{font-weight:600;color:#e56d84;font-size:13.5px;margin:12px 0 5px;}
+    #mmt-deploy-overlay .dg-p{font-size:12.5px;line-height:1.75;color:#3a3040;margin:4px 0;}
+    #mmt-deploy-overlay .dg-row{display:grid;grid-template-columns:auto 1fr;border-left:3px solid #f0a4b4;
+      background:#fdf4f6;border-radius:8px;padding:7px 10px;margin:6px 0;gap:2px 12px;}
+    #mmt-deploy-overlay .dg-row.alt{background:#fbf9fa;border-left-color:#d9c3cb;}
+    #mmt-deploy-overlay .dg-c1{font-weight:600;color:#c94f66;font-size:12px;grid-column:1;}
+    #mmt-deploy-overlay .dg-c2{font-size:12px;color:#3a3040;grid-column:2;grid-row:1;}
+    #mmt-deploy-overlay .dg-c3{font-size:11px;color:#8a7a83;grid-column:2;grid-row:2;}
+    #mmt-deploy-overlay .dg-tip{text-align:center;color:#8a7a83;font-size:11px;margin-top:14px;}
+    #mmt-deploy-overlay .dg-foot{display:flex;gap:10px;padding:10px 16px;border-top:1px solid #f0e3e8;background:#fdf8fa;}
+    #mmt-deploy-overlay .dg-foot button{flex:1;padding:9px 0;border-radius:10px;border:1px solid #f0c9d4;
+      font-size:13px;cursor:pointer;background:#fdf0f3;color:#e56d84;font-weight:600;}
+    #mmt-deploy-overlay .dg-foot button:hover{filter:brightness(.97);}
   `;
   document.head.appendChild(Object.assign(document.createElement('style'), { textContent: CSS }));
 
@@ -157,6 +179,56 @@
     else header.appendChild(btn);
   }
 
+  // ── 新电脑部署指南:软件内预览浮层(不依赖第三方查看器) ──
+  function showDeployGuide() {
+    let ov = document.getElementById('mmt-deploy-overlay');
+    if (ov) { ov.style.display = 'flex'; return; }
+    ov = document.createElement('div');
+    ov.id = 'mmt-deploy-overlay';
+    ov.innerHTML = `
+      <div class="dg-win">
+        <div class="dg-head"><span>新电脑部署指南</span><button class="dg-close">✕</button></div>
+        <div class="dg-body">
+          <div class="dg-h">一分钟总览</div>
+          <div class="dg-p">MomoTalk 的全部智能功能(聊天回复、图片识别、克隆语音)都依赖本机服务:Ollama(聊天与视觉模型)与 voice-studio(语音合成)。在新电脑上把它们部署好,再安装 MomoTalk 本体即可开箱即用。</div>
+          <div class="dg-row"><div class="dg-c1">A 迁移包(推荐)</div><div class="dg-c2">旧电脑生成迁移包(约 25GB,含 voice-studio 全套与模型),新电脑一键部署</div><div class="dg-c3">有旧电脑、想完全一致</div></div>
+          <div class="dg-row alt"><div class="dg-c1">B 全新下载</div><div class="dg-c2">一键脚本自动安装 Ollama、下载模型、部署语音服务(需网络)</div><div class="dg-c3">没有旧电脑或想全新安装</div></div>
+          <div class="dg-h">方式 A:迁移包(推荐)</div>
+          <div class="dg-p">1. 在旧电脑:双击 make-migration-pack.command,自动打包 voice-studio 全套(含 GPT-SoVITS/RVC 模型)、Ollama 模型与安装包。</div>
+          <div class="dg-p">2. 把整个 setup 文件夹拷到新电脑(U 盘/移动硬盘)。</div>
+          <div class="dg-p">3. 在新电脑:双击 setup-momotalk.command,自动完成服务部署与模型安装。</div>
+          <div class="dg-p">4. 双击 MomoTalk 安装包,拖入 Applications,打开即用。</div>
+          <div class="dg-h">方式 B:全新下载</div>
+          <div class="dg-p">1. 双击 setup-momotalk.command:自动安装 Ollama(GitHub 加速)、从 ModelScope 下载聊天模型 qwen2.5:7b 与视觉模型 qwen2.5vl:3b、部署 voice-studio 并配置运行环境(首次约 10 分钟)。</div>
+          <div class="dg-p">2. 自动安装语音服务开机自启,并做三项就绪校验(聊天/视觉/语音)。</div>
+          <div class="dg-p">3. 安装 MomoTalk,打开即用。</div>
+          <div class="dg-h">日常使用</div>
+          <div class="dg-p">聊天:发消息 AI 自动回复;点学生头像重新生成;发图 AI 会先看图再回复。</div>
+          <div class="dg-p">语音:点消息旁的小喇叭,学生的克隆音色读出来;语音设置里可切 RVC 变声引擎。</div>
+          <div class="dg-p">语言:简/繁/EN/日 四语切换,学生名字同步官方译名。</div>
+          <div class="dg-p">备份:菜单 文件 → 备份数据(⌘⇧B),自选保存位置;换电脑导入备份即可。</div>
+          <div class="dg-h">常见问题</div>
+          <div class="dg-row"><div class="dg-c1">首句语音等待很久</div><div class="dg-c2">语音服务冷启动加载模型,30–60 秒属正常</div></div>
+          <div class="dg-row alt"><div class="dg-c1">AI 首次回复慢</div><div class="dg-c2">聊天模型按需加载,约 10–20 秒</div></div>
+          <div class="dg-row"><div class="dg-c1">图片识别无反应</div><div class="dg-c2">视觉模型按需加载,发图后稍等片刻</div></div>
+          <div class="dg-row alt"><div class="dg-c1">想换 AI 模型</div><div class="dg-c2">通用设置 → 模型下拉选择,或接云端 API</div></div>
+          <div class="dg-row"><div class="dg-c1">语音没有声音</div><div class="dg-c2">语音设置 → 检测服务;确认开机后语音服务已就绪(约 1 分钟)</div></div>
+          <div class="dg-tip">所有数据只存在本机 · ForJiang © 2026</div>
+        </div>
+        <div class="dg-foot"><button class="dg-pdf">下载 PDF 版</button><button class="dg-ok">我知道了</button></div>
+      </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('.dg-close').onclick = () => { ov.style.display = 'none'; };
+    ov.querySelector('.dg-ok').onclick = () => { ov.style.display = 'none'; };
+    ov.querySelector('.dg-pdf').onclick = () => {
+      const a = document.createElement('a');
+      a.href = '/docs/deploy-guide.pdf';
+      a.download = 'MomoTalk-部署指南.pdf';
+      document.body.appendChild(a); a.click(); a.remove();
+    };
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.style.display = 'none'; });
+  }
+
   // ── Demo 模式:预置演示对话回放(无需 AI) ──
   let demoPlaying = false;
   const DEMO_SCRIPT = [
@@ -222,7 +294,7 @@
     }
   }
 
-  window.mmtFeatures = { startDemo: () => startDemo() };
+  window.mmtFeatures = { startDemo: () => startDemo(), showDeployGuide: () => showDeployGuide() };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureScreenshotModule);
   else ensureScreenshotModule();

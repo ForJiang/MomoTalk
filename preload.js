@@ -19,7 +19,6 @@ contextBridge.exposeInMainWorld('mmtShell', {
   setAlwaysOnTop: (flag) => ipcRenderer.invoke('mmt-shell:set-always-on-top', flag),
   backupAll: () => ipcRenderer.invoke('mmt-data:backup'),
   clearAll: () => ipcRenderer.invoke('mmt-data:clear-all'),
-  openDeployGuide: () => ipcRenderer.invoke('mmt-shell:deploy-guide'),
 });
 
 contextBridge.exposeInMainWorld('mmtImages', {

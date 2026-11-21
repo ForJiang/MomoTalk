@@ -424,11 +424,7 @@ function buildMenu(win) {
         },
         {
           label: L.deployGuide,
-          click: () => {
-            let p = path.join(process.resourcesPath || '', 'docs', 'MomoTalk-部署指南.pdf');
-            if (!fs.existsSync(p)) p = path.join(__dirname, 'build', 'docs', 'MomoTalk-部署指南.pdf');
-            if (fs.existsSync(p)) require('electron').shell.openPath(p);
-          },
+          click: () => sendToPage(win, `window.mmtFeatures && window.mmtFeatures.showDeployGuide && window.mmtFeatures.showDeployGuide()`),
         },
         { type: 'separator' },
         { role: 'close', label: L.closeWin },
